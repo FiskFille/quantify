@@ -1,0 +1,40 @@
+plugins {
+    id 'java'
+    id 'maven-publish'
+}
+
+java {
+    withSourcesJar()
+}
+
+group 'com.fiskmods.quantify'
+version project.version
+
+repositories {
+    mavenCentral()
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = group
+            artifactId = rootProject.name
+            version = version
+            from components.java
+
+            pom {
+                name = rootProject.name
+                description = project.description
+            }
+        }
+    }
+    repositories {
+        maven {
+            credentials {
+                username = "$repsyUsername"
+                password = "$repsyPassword"
+            }
+            url = "https://repsy.io/mvn/fiskfille/fiskmods/"
+        }
+    }
+}
