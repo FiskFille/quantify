@@ -6,8 +6,6 @@ import com.fiskmods.quantify.exception.QtfParseException;
 import java.util.function.Function;
 
 public class QtfUtil {
-    public static final char OUTPUT_PREFIX = '.';
-
     public static String extractToken(TokenReader reader, Function<TokenReader, String> func, String errorMessage)
             throws QtfParseException {
         reader.skipSpaces();

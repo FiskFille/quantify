@@ -1,7 +1,6 @@
 package com.fiskmods.quantify.member;
 
 import com.fiskmods.quantify.jvm.FunctionAddress;
-import com.fiskmods.quantify.util.QtfUtil;
 
 import java.util.Arrays;
 import java.util.List;
@@ -40,8 +39,7 @@ public class MemberMap {
 
     public QtfMemory createMemory(QtfListener listener) {
         QtfMemory memory = createMemory();
-        listener.listen(Variable.resolve(this, memory), () -> variables.stream()
-                .filter(t -> t != null && t.charAt(0) == QtfUtil.OUTPUT_PREFIX));
+        listener.listen(Variable.resolve(this, memory), variables::stream);
         return memory;
     }
 }

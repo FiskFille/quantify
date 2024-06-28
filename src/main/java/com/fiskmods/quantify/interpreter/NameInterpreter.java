@@ -149,7 +149,7 @@ public class NameInterpreter implements Interpreter {
     }
 
     private String extractOutputName(String name, TokenReader reader) throws QtfParseException {
-        StringBuilder nameBuilder = new StringBuilder(QtfUtil.OUTPUT_PREFIX + name);
+        StringBuilder nameBuilder = new StringBuilder(name);
         while (QtfUtil.peekChar(reader) == '.') {
             reader.skipSpaces();
             reader.skip(1);

@@ -8,6 +8,7 @@ import com.fiskmods.quantify.insn.MemberInsnNode;
 import com.fiskmods.quantify.interpreter.InterpreterStack;
 import com.fiskmods.quantify.jvm.*;
 import com.fiskmods.quantify.member.MemberMap;
+import com.fiskmods.quantify.member.QtfListener;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
@@ -49,10 +50,15 @@ public class QtfEvaluator {
         }
     }
 
-    // TODO: Re-add support for listeners
-//    public QtfScript compile(QtfListener listener) throws QtfAssemblyException {
-//        return new QtfScript(assemble(), members.createMemory(inputs, listener));
-//    }
+    public QtfScript compile(String name, DynamicClassLoader classLoader, QtfListener listener) throws QtfAssemblyException {
+        try {
+            JvmRunnable runnable = JvmCompiler.compile(assemble(), name, classLoader);
+            return new QtfScript(runnable, members.createMemory(listener));
+        }
+        catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
+            throw new QtfAssemblyException(e.toString());
+        }
+    }
 
     private class AssemblyHelper {
         private List<InsnNode> list = nodes;

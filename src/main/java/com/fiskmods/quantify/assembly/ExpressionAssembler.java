@@ -79,7 +79,6 @@ public class ExpressionAssembler {
             });
         }
 
-        // TODO: Re-add support for functions
         if (funcNode != null) {
             assembleFunction(assembly, evaluator, funcNode);
             return;

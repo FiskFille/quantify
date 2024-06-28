@@ -34,7 +34,7 @@ public class OutputTree {
         output.keys().forEach(t -> {
             Variable var = Variable.create();
             resolver.subscribe(var, t);
-            vars.put(t.substring(1), var);
+            vars.put(t, var);
         });
     }
 }
