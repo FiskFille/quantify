@@ -1,57 +1,61 @@
 package com.fiskmods.quantify.library;
 
-public interface QtfMath {
-    QtfLibrary LIBRARY = StandardQtfLibrary.builder()
-            .addFunction("sin", Math::sin)
-            .addFunction("cos", Math::cos)
-            .addFunction("tan", Math::tan)
-            .addFunction("asin", Math::asin)
-            .addFunction("acos", Math::acos)
-            .addFunction("atan", Math::atan)
-            .addFunction("abs", Math::abs)
-            .addFunction("log", Math::log)
-            .addFunction("log10", Math::log10)
-            .addFunction("log1p", Math::log1p)
-            .addFunction("sqrt", Math::sqrt)
-            .addFunction("cbrt", Math::cbrt)
-            .addFunction("signum", Math::signum)
-            .addFunction("sinh", Math::sinh)
-            .addFunction("cosh", Math::cosh)
-            .addFunction("tanh", Math::tanh)
-            .addFunction("exp", Math::exp)
-            .addFunction("expm1", Math::expm1)
-            .addFunction("round", Math::round)
-            .addFunction("floor", Math::floor)
-            .addFunction("ceil", Math::ceil)
-            .addFunction("wrapTo180", QtfMath::wrapAngleTo180)
-            .addFunction("wrapToPi", QtfMath::wrapAngleToPi)
+@SuppressWarnings("unused")
+public class QtfMath {
+    private static final String MATH = "java/lang/Math";
+    private static final String QTF_MATH = "com/fiskmods/quantify/library/QtfMath";
 
-            .addFunction("min", Math::min)
-            .addFunction("max", Math::max)
-            .addFunction("atan2", Math::atan2)
-            .addFunction("hypot", Math::hypot)
-            .addFunction("logn", QtfMath::logn)
-            .addFunction("root", QtfMath::root)
+    public static final QtfLibrary LIBRARY = StandardQtfLibrary.builder()
+            .addFunction(MATH, "sin", 1)
+            .addFunction(MATH, "cos", 1)
+            .addFunction(MATH, "tan", 1)
+            .addFunction(MATH, "asin", 1)
+            .addFunction(MATH, "acos", 1)
+            .addFunction(MATH, "atan", 1)
+            .addFunction(MATH, "abs", 1)
+            .addFunction(MATH, "log", 1)
+            .addFunction(MATH, "log10", 1)
+            .addFunction(MATH, "log1p", 1)
+            .addFunction(MATH, "sqrt", 1)
+            .addFunction(MATH, "cbrt", 1)
+            .addFunction(MATH, "signum", 1)
+            .addFunction(MATH, "sinh", 1)
+            .addFunction(MATH, "cosh", 1)
+            .addFunction(MATH, "tanh", 1)
+            .addFunction(MATH, "exp", 1)
+            .addFunction(MATH, "expm1", 1)
+            .addFunction(MATH, "round", 1)
+            .addFunction(MATH, "floor", 1)
+            .addFunction(MATH, "ceil", 1)
+            .addFunction(QTF_MATH, "wrapTo180", 1)
+            .addFunction(QTF_MATH, "wrapToPi", 1)
 
-            .addFunction("clamp", QtfMath::clamp)
-            .addFunction("lerp", QtfMath::lerp)
-            .addFunction("lerpRot", QtfMath::lerpRot)
+            .addFunction(MATH, "min", 2)
+            .addFunction(MATH, "max", 2)
+            .addFunction(MATH, "atan2", 2)
+            .addFunction(MATH, "hypot", 2)
+            .addFunction(QTF_MATH, "logn", 2)
+            .addFunction(QTF_MATH, "root", 2)
+
+            .addFunction(QTF_MATH, "clamp", 3)
+            .addFunction(QTF_MATH, "lerp", 3)
+            .addFunction(QTF_MATH, "lerpRot", 3)
 
             .build("lang/Math");
 
-    static double logn(double base, double d) {
+    public static double logn(double base, double d) {
         return Math.log(d) / Math.log(base);
     }
 
-    static double root(double d, double num) {
+    public static double root(double d, double num) {
         return Math.pow(d, 1 / num);
     }
 
-    static double clamp(double d, double min, double max) {
+    public static double clamp(double d, double min, double max) {
         return Math.min(Math.max(d, min), max);
     }
 
-    static double wrapAngleTo180(double value) {
+    public static double wrapAngleTo180(double value) {
         while (value < -180) {
             value += 360;
         }
@@ -61,7 +65,7 @@ public interface QtfMath {
         return value;
     }
 
-    static double wrapAngleToPi(double value) {
+    public static double wrapAngleToPi(double value) {
         while (value < -Math.PI) {
             value += 2 * Math.PI;
         }
@@ -71,11 +75,11 @@ public interface QtfMath {
         return value;
     }
 
-    static double lerp(double progress, double from, double to) {
+    public static double lerp(double progress, double from, double to) {
         return from + progress * (to - from);
     }
 
-    static double lerpRot(double progress, double from, double to) {
+    public static double lerpRot(double progress, double from, double to) {
         return from + progress * wrapAngleToPi(to - from);
     }
 }

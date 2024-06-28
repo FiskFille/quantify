@@ -3,13 +3,14 @@ package com.fiskmods.quantify.assembly;
 import com.fiskmods.quantify.exception.QtfAssemblyException;
 import com.fiskmods.quantify.insn.InsnNode;
 import com.fiskmods.quantify.insn.MemberInsnNode;
-import com.fiskmods.quantify.member.QtfFunction;
+import com.fiskmods.quantify.jvm.FunctionAddress;
+import com.fiskmods.quantify.jvm.JvmFunction;
+import com.fiskmods.quantify.jvm.JvmUtil;
 import com.fiskmods.quantify.member.QtfMemory;
 import com.fiskmods.quantify.script.QtfEvaluator;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.DoubleBinaryOperator;
 
 import static com.fiskmods.quantify.insn.Instruction.*;
 
@@ -35,15 +36,15 @@ public class ExpressionAssembler {
         }
     }
 
-    public static Object assemble(List<InsnNode> nodes, QtfEvaluator evaluator) throws QtfAssemblyException {
+    public static JvmFunction assemble(List<InsnNode> nodes, QtfEvaluator evaluator) throws QtfAssemblyException {
         List<Object> assembly = new ArrayList<>(nodes);
         assembleBody(assembly, evaluator, null);
         return isolateAssembly(assembly);
     }
 
-    private static Object isolateAssembly(List<Object> assembly) {
+    private static JvmFunction isolateAssembly(List<Object> assembly) {
         // TODO: Make sure only one entry remains in assembly
-        return Assembler.unwrapIfNecessary(assembly.get(0));
+        return JvmUtil.toJvmIfNecessary(assembly.get(0));
     }
 
     private static void assembleBody(List<Object> assembly, QtfEvaluator evaluator, MemberInsnNode funcNode)
@@ -55,12 +56,12 @@ public class ExpressionAssembler {
                 continue;
             }
             if (node.instruction == FRUN && node instanceof MemberInsnNode m) {
-                QtfFunction func = evaluator.getFunction(m);
-                if (func.parameters() != 0) {
+                FunctionAddress func = evaluator.getFunction(m);
+                if (func.parameters != 0) {
                     throw evaluator.error("incorrect number of parameters for function: 0, expected %s"
-                            .formatted(func.parameters()), m);
+                            .formatted(func.parameters), m);
                 }
-                assembly.set(i, QtfMemory.run(m.id, m.isNegative(), new Object[0]));
+                assembly.set(i, QtfMemory.run(func, new JvmFunction[0]).negateIf(m.isNegative()));
                 continue;
             }
 
@@ -78,6 +79,7 @@ public class ExpressionAssembler {
             });
         }
 
+        // TODO: Re-add support for functions
         if (funcNode != null) {
             assembleFunction(assembly, evaluator, funcNode);
             return;
@@ -90,7 +92,7 @@ public class ExpressionAssembler {
 
     private static void assembleFunction(List<Object> assembly, QtfEvaluator evaluator, MemberInsnNode funcNode)
             throws QtfAssemblyException {
-        List<Object> parameters = new ArrayList<>();
+        List<JvmFunction> parameters = new ArrayList<>();
 
         for (int i = 0, startIndex = 0; i < assembly.size(); ++i) {
             // The last parameter has no NXT
@@ -106,35 +108,38 @@ public class ExpressionAssembler {
             startIndex = i + 1;
         }
 
-        QtfFunction func = evaluator.getFunction(funcNode);
-        if (func.parameters() != parameters.size()) {
+        FunctionAddress func = evaluator.getFunction(funcNode);
+        if (func.parameters != parameters.size()) {
             throw evaluator.error("incorrect number of parameters for function: %s, expected %s"
-                    .formatted(parameters.size(), func.parameters()), funcNode);
+                    .formatted(parameters.size(), func.parameters), funcNode);
         }
+
         assembly.clear();
-        assembly.add(QtfMemory.run(funcNode.id, funcNode.isNegative(), parameters.toArray()));
+        assembly.add(QtfMemory.run(func, parameters.toArray(new JvmFunction[0]))
+                .negateIf(funcNode.isNegative()));
     }
 
     private static void assembleOperations(List<Object> assembly, QtfEvaluator evaluator, int ops)
             throws QtfAssemblyException {
-        for (int i = assembly.size() - 1; i >= 0; --i) {
+        for (int i = 0; i < assembly.size(); ++i) {
             if (assembly.get(i) instanceof InsnNode node) {
                 // Skip if non-operator, or if we're not looking for that operator right now
                 if (!isOperator(node.instruction) || (ops & (1 << (node.instruction & MASK_VALUE))) == 0) {
                     continue;
                 }
-                assembleOperation(assembly, evaluator, node, i);
+                i = assembleOperation(assembly, evaluator, node, i);
             }
         }
     }
 
-    private static void assembleOperation(List<Object> assembly, QtfEvaluator evaluator, InsnNode node, int index)
+    private static int assembleOperation(List<Object> assembly, QtfEvaluator evaluator, InsnNode node, int index)
             throws QtfAssemblyException {
         if (index <= 0 || index + 1 >= assembly.size()) {
             throw evaluator.error("invalid operator position", node);
         }
-        Object left = Assembler.unwrap(assembly.get(index - 1));
-        DoubleBinaryOperator func = getOperatorFunction(node.instruction);
+        JvmFunction left = JvmUtil.toJvm(assembly.get(index - 1));
+        JvmFunction func = JvmFunction.getOperatorFunction(node.instruction);
+
         if (func == null) {
             throw evaluator.error("invalid operator", node);
         }
@@ -142,14 +147,15 @@ public class ExpressionAssembler {
             throw evaluator.error("invalid first term", node, -1);
         }
 
-        Object right = assembly.get(index + 1);
+        Object rightObj = assembly.get(index + 1);
+        JvmFunction right;
         boolean rightNegated = false;
-        if (index + 2 < assembly.size() && right instanceof InsnNode n && n.instruction == SUB) {
-            right = Assembler.negate(Assembler.unwrap(assembly.get(index + 2)));
+        if (index + 2 < assembly.size() && rightObj instanceof InsnNode n && n.instruction == SUB) {
+            right = JvmUtil.toJvm(assembly.get(index + 2)).negate();
             rightNegated = true;
         }
         else {
-            right = Assembler.unwrap(right);
+            right = JvmUtil.toJvm(rightObj);
         }
         if (right == null) {
             throw evaluator.error("invalid second term", node, 1);
@@ -160,6 +166,7 @@ public class ExpressionAssembler {
         }
         assembly.remove(index + 1);
         assembly.remove(index);
-        assembly.set(--index, Assembler.wrap(func, left, right));
+        assembly.set(--index, JvmUtil.binaryOperator(func, left, right));
+        return index;
     }
 }

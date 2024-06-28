@@ -4,8 +4,8 @@ import com.fiskmods.quantify.exception.QtfAssemblyException;
 import com.fiskmods.quantify.exception.QtfParseException;
 import com.fiskmods.quantify.interpreter.Interpreter;
 import com.fiskmods.quantify.interpreter.InterpreterStack;
+import com.fiskmods.quantify.jvm.DynamicClassLoader;
 import com.fiskmods.quantify.library.QtfLibrary;
-import com.fiskmods.quantify.member.QtfListener;
 import com.fiskmods.quantify.script.QtfEvaluator;
 import com.fiskmods.quantify.script.QtfScript;
 import com.fiskmods.quantify.util.TokenReader;
@@ -13,6 +13,7 @@ import com.fiskmods.quantify.util.TokenReader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.StringJoiner;
+import java.util.UUID;
 
 import static com.fiskmods.quantify.exception.QtfParseException.unknownToken;
 
@@ -21,6 +22,9 @@ public class QtfParser {
 
     public final QtfSyntax syntax;
     private final Map<String, QtfLibrary> libraries = new HashMap<>();
+
+    private final DynamicClassLoader classLoader = new DynamicClassLoader();
+    private int nextId = -1;
 
     public QtfParser(QtfSyntax syntax) {
         this.syntax = syntax;
@@ -52,13 +56,18 @@ public class QtfParser {
         return new QtfEvaluator(syntax, is);
     }
 
-    public QtfScript compile(String text) throws QtfParseException, QtfAssemblyException {
-        return evaluate(text).compile();
+    private String nextName() {
+        return "Compiled" + ++nextId;
     }
 
-    public QtfScript compile(String text, QtfListener listener) throws QtfParseException, QtfAssemblyException {
-        return evaluate(text).compile(listener);
+    public QtfScript compile(String text) throws QtfParseException, QtfAssemblyException {
+        return evaluate(text).compile(nextName(), classLoader);
     }
+
+    // TODO: Re-add support for listeners
+//    public QtfScript compile(String text, QtfListener listener) throws QtfParseException, QtfAssemblyException {
+//        return evaluate(text).compile(listener);
+//    }
 
     public InterpreterStack.InterpretedScript interpret(String text) throws QtfParseException {
         text = trimLines(text)

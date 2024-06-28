@@ -1,56 +1,48 @@
 package com.fiskmods.quantify.member;
 
 import com.fiskmods.quantify.assembly.AssemblyFunction;
-import com.fiskmods.quantify.assembly.AssemblyRunnable;
 import com.fiskmods.quantify.exception.QtfExecutionException;
-import com.fiskmods.quantify.library.QtfMath;
+import com.fiskmods.quantify.jvm.*;
 
-import java.util.Arrays;
-import java.util.function.DoubleBinaryOperator;
+import static org.objectweb.asm.Opcodes.*;
 
 public class QtfMemory {
-    private final double[] vars;
-    private final QtfFunction[] funcs;
+    public static final int LOCAL_INDEX = 3;
 
-    private final int[] inputIndexMap;
+    private final double[] output;
+    private final FunctionAddress[] funcs;
 
-    public QtfMemory(double[] vars, QtfFunction[] funcs, int[] inputIndexMap) {
-        this.vars = vars;
+    public QtfMemory(double[] output, FunctionAddress[] funcs) {
+        this.output = output;
         this.funcs = funcs;
-        this.inputIndexMap = inputIndexMap;
+    }
+
+    public void run(JvmRunnable runnable, double[] input) {
+        runnable.run(input, output);
     }
 
     public void print() {
-        for (int i = 0; i < vars.length; ++i) {
-            System.out.println("V " + i + ": " + vars[i]);
+        for (int i = 0; i < output.length; ++i) {
+            System.out.println("V " + i + ": " + output[i]);
         }
         for (int i = 0; i < funcs.length; ++i) {
             System.out.println("F " + i + ": " + funcs[i]);
         }
     }
 
-    public void loadInputs(double[] args) {
-        for (int i = 0; i < Math.min(args.length, inputIndexMap.length); ++i) {
-            int id = inputIndexMap[i];
-            if (id > -1) {
-                vars[id] = args[i];
-            }
-        }
-    }
-
     public VarReference resolve(int id) {
-        if (id < 0 || id >= vars.length) {
+        if (id < 0 || id >= output.length) {
             return VarReference.EMPTY;
         }
         return new VarReference() {
             @Override
             public double get() {
-                return vars[id];
+                return output[id];
             }
 
             @Override
             public void set(double value) {
-                vars[id] = value;
+                output[id] = value;
             }
         };
     }
@@ -67,118 +59,125 @@ public class QtfMemory {
         }
     }
 
-    public static AssemblyFunction get(int id, boolean negated) {
-        return negated
-                ? memory -> -memory.vars[id]
-                : memory -> memory.vars[id];
-    }
-
-    public static AssemblyRunnable init(int id) {
-        return memory -> memory.vars[id] = 0;
-    }
-
-    public static AssemblyRunnable set(int id, boolean negated, Object result) {
-        return negated
-                ? memory -> memory.vars[id] = -memory.cast(result)
-                : memory -> memory.vars[id] = memory.cast(result);
-    }
-
-    public static AssemblyRunnable set(int id, boolean negated, Object result, DoubleBinaryOperator operator) {
-        return negated
-                ? memory -> memory.vars[id] = operator.applyAsDouble(memory.vars[id], -memory.cast(result))
-                : memory -> memory.vars[id] = operator.applyAsDouble(memory.vars[id], memory.cast(result));
-    }
-
-    public static AssemblyRunnable set(int[] ids, boolean negated, Object result) {
-        System.out.println(Arrays.toString(ids) + ", " + negated + ", " + result);
-        return negated ? memory -> {
-            double value = -memory.cast(result);
-            for (int id : ids) {
-                memory.vars[id] = value;
+    public static JvmFunction get(int id, VariableType type) {
+        return mv -> {
+            if (type.isExternal()) {
+                JvmUtil.arrayLoad(mv, type.refOffset(), id);
+                return;
             }
-        } : memory -> {
-            double value = memory.cast(result);
-            for (int id : ids) {
-                memory.vars[id] = value;
-            }
+            mv.visitVarInsn(DLOAD, id * 2 + LOCAL_INDEX);
         };
     }
 
-    public static AssemblyRunnable set(Address[] addresses, Object result) {
-        return memory -> {
-            double value = memory.cast(result);
+    public static JvmFunction init(int id) {
+        return mv -> {
+            mv.visitInsn(DCONST_0);
+            mv.visitVarInsn(DSTORE, id * 2 + LOCAL_INDEX);
+        };
+    }
+
+    public static JvmFunction set(int id, VariableType type, JvmFunction result) {
+        return mv -> {
+            if (type.isExternal()) {
+                JvmUtil.arrayStore(mv, type.refOffset(), id, result);
+                return;
+            }
+            result.apply(mv);
+            mv.visitVarInsn(DSTORE, id * 2 + LOCAL_INDEX);
+        };
+    }
+
+    public static JvmFunction set(int id, VariableType type, JvmFunction result, JvmFunction operator) {
+        return mv -> {
+            if (type.isExternal()) {
+                JvmUtil.arrayModify(mv, type.refOffset(), id, result.andThen(operator));
+                return;
+            }
+            mv.visitVarInsn(DLOAD, id * 2 + LOCAL_INDEX);
+            result.apply(mv);
+            operator.apply(mv);
+            mv.visitVarInsn(DSTORE, id * 2 + LOCAL_INDEX);
+        };
+    }
+
+    public static JvmFunction set(Address[] addresses, JvmFunction result) {
+        return mv -> {
             for (Address a : addresses) {
-                memory.vars[a.id] = a.negated ? -value : value;
+                if (a.type.isExternal()) {
+                    JvmUtil.arrayStore(mv, a.type.refOffset(), a.id, result.negateIf(a.isNegated));
+                    continue;
+                }
+                result.negateIf(a.isNegated).apply(mv);
+                mv.visitVarInsn(DSTORE, LOCAL_INDEX + a.id);
             }
         };
     }
 
-    public static AssemblyRunnable set(int[] ids, boolean negated, Object result, DoubleBinaryOperator operator) {
-        return negated ? memory -> {
-            double value = -memory.cast(result);
-            for (int id : ids) {
-                memory.vars[id] = operator.applyAsDouble(memory.vars[id], value);
-            }
-        } : memory -> {
-            double value = memory.cast(result);
-            for (int id : ids) {
-                memory.vars[id] = operator.applyAsDouble(memory.vars[id], value);
-            }
-        };
-    }
-
-    public static AssemblyRunnable set(Address[] addresses, Object result, DoubleBinaryOperator operator) {
-        return memory -> {
-            double value = memory.cast(result);
+    public static JvmFunction set(Address[] addresses, JvmFunction result, JvmFunction operator) {
+        return mv -> {
             for (Address a : addresses) {
-                memory.vars[a.id] = operator.applyAsDouble(memory.vars[a.id],
-                        a.negated ? -value : value);
+                if (a.type.isExternal()) {
+                    JvmUtil.arrayModify(mv, a.type.refOffset(), a.id,
+                            result.negateIf(a.isNegated).andThen(operator));
+                    continue;
+                }
+                mv.visitVarInsn(DLOAD, a.id * 2 + LOCAL_INDEX);
+                result.negateIf(a.isNegated).apply(mv);
+                operator.apply(mv);
+                mv.visitVarInsn(DSTORE, a.id * 2 + LOCAL_INDEX);
             }
         };
     }
 
-    public static AssemblyFunction run(int id, boolean negated, Object[] params) {
-        return negated
-                ? memory -> -memory.funcs[id].run(memory, params)
-                : memory -> memory.funcs[id].run(memory, params);
-    }
-
-    public static AssemblyRunnable lerp(int varId, int lerpId, boolean negated, boolean rotational, Object result) {
-        return rotational
-                ? memory -> memory.vars[varId] = QtfMath.lerpRot(memory.vars[lerpId], memory.vars[varId], negated ? -memory.cast(result) : memory.cast(result))
-                : memory -> memory.vars[varId] = QtfMath.lerp(memory.vars[lerpId], memory.vars[varId], negated ? -memory.cast(result) : memory.cast(result));
-    }
-
-    public static AssemblyRunnable lerp(int[] varIds, int lerpId, boolean negated, boolean rotational, Object result) {
-        return rotational ? memory -> {
-            double value = negated ? -memory.cast(result) : memory.cast(result);
-            for (int id : varIds) {
-                memory.vars[id] = QtfMath.lerp(memory.vars[lerpId], memory.vars[id], value);
+    public static JvmFunction run(FunctionAddress address, JvmFunction[] params) {
+        return mv -> {
+            for (JvmFunction function : params) {
+                function.apply(mv);
             }
-        } : memory -> {
-            double value = negated ? -memory.cast(result) : memory.cast(result);
-            for (int id : varIds) {
-                memory.vars[id] = QtfMath.lerpRot(memory.vars[lerpId], memory.vars[id], value);
+            mv.visitMethodInsn(INVOKESTATIC, address.owner, address.name, address.descriptor, false);
+        };
+    }
+
+    public static JvmFunction lerp(Address var, Address lerp, boolean rotational, JvmFunction result) {
+        final String QTF_MATH = "com/fiskmods/quantify/library/QtfMath";
+        return mv -> {
+            if (var.type.isExternal()) {
+                JvmUtil.arrayModify(mv, var.type.refOffset(), var.id, ignored -> {
+                    get(lerp.id, lerp.type).apply(mv);
+                    result.apply(mv);
+                    JvmUtil.arrayLoad(mv, var.type.refOffset(), var.id);
+                    mv.visitInsn(DSUB);
+                    if (rotational) {
+                        mv.visitMethodInsn(INVOKESTATIC, QTF_MATH, "wrapAngleToPi", "(D)D", false);
+                    }
+                    mv.visitInsn(DMUL);
+                    mv.visitInsn(DADD);
+                });
+            }
+            else {
+                mv.visitVarInsn(DLOAD, var.id * 2 + LOCAL_INDEX);
+                get(lerp.id, lerp.type).apply(mv);
+                result.apply(mv);
+                mv.visitVarInsn(DLOAD, var.id * 2 + LOCAL_INDEX);
+                mv.visitInsn(DSUB);
+                if (rotational) {
+                    mv.visitMethodInsn(INVOKESTATIC, QTF_MATH, "wrapAngleToPi", "(D)D", false);
+                }
+                mv.visitInsn(DMUL);
+                mv.visitInsn(DADD);
+                mv.visitVarInsn(DSTORE, var.id * 2 + LOCAL_INDEX);
             }
         };
     }
 
-    public static AssemblyRunnable lerp(Address[] addresses, int lerpId, boolean rotational, Object result) {
-        return rotational ? memory -> {
-            double value = memory.cast(result);
+    public static JvmFunction lerp(Address[] addresses, Address lerp, boolean rotational, JvmFunction result) {
+        return mv -> {
             for (Address a : addresses) {
-                memory.vars[a.id] = QtfMath.lerp(memory.vars[lerpId], memory.vars[a.id],
-                        a.negated ? -value : value);
-            }
-        } : memory -> {
-            double value = memory.cast(result);
-            for (Address a : addresses) {
-                memory.vars[a.id] = QtfMath.lerpRot(memory.vars[lerpId], memory.vars[a.id],
-                        a.negated ? -value : value);
+                lerp(a, lerp, rotational, result.negateIf(a.isNegated)).apply(mv);
             }
         };
     }
 
-    public record Address(int id, boolean negated) {
+    public record Address(int id, VariableType type, boolean isNegated) {
     }
 }

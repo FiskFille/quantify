@@ -1,6 +1,5 @@
 package com.fiskmods.quantify.assembly;
 
-import com.fiskmods.quantify.exception.QtfAssemblyException;
 import com.fiskmods.quantify.exception.QtfExecutionException;
 import com.fiskmods.quantify.member.QtfMemory;
 
@@ -24,10 +23,5 @@ public interface AssemblyRunnable {
             run(t);
             next.run(t);
         };
-    }
-
-    @FunctionalInterface
-    interface Supplier {
-        AssemblyRunnable get() throws QtfAssemblyException;
     }
 }

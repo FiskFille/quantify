@@ -1,11 +1,11 @@
 package com.fiskmods.quantify.library;
 
-import com.fiskmods.quantify.member.QtfFunction;
+import com.fiskmods.quantify.jvm.FunctionAddress;
 
 public interface QtfLibrary {
     String getKey();
 
     Double getConstant(String name);
 
-    QtfFunction getFunction(String name);
+    FunctionAddress getFunction(String name);
 }

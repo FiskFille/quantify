@@ -1,5 +1,6 @@
 package com.fiskmods.quantify.insn;
 
+import com.fiskmods.quantify.jvm.VariableType;
 import com.fiskmods.quantify.member.QtfMemory;
 
 public class MemberInsnNode extends InsnNode implements ValueInsnNode {
@@ -23,7 +24,7 @@ public class MemberInsnNode extends InsnNode implements ValueInsnNode {
     }
 
     public QtfMemory.Address toAddress() {
-        return new QtfMemory.Address(id, negated);
+        return new QtfMemory.Address(id, VariableType.get(instruction), negated);
     }
 
     @Override

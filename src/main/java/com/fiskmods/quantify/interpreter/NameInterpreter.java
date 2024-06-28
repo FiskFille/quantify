@@ -61,8 +61,7 @@ public class NameInterpreter implements Interpreter {
             return true;
         }
 
-        if (multiVar && stack.wasLast(t -> t == NXT)
-                && stack.lookBack(2) instanceof MemberInsnNode var) {
+        if (multiVar && stack.wasLast(NXT) && stack.lookBack(2) instanceof MemberInsnNode var) {
             int id;
             if (var.instruction == DEF) {
                 id = stack.state().addMember(name, MemberType.VARIABLE, InterpreterState.ScopeLevel.LOCAL);
@@ -126,11 +125,10 @@ public class NameInterpreter implements Interpreter {
 
             if (stack.state().has(name, MemberType.OUTPUT_VARIABLE, InterpreterState.ScopeLevel.GLOBAL)) {
                 id = stack.state().getMemberId(name, MemberType.OUTPUT_VARIABLE, InterpreterState.ScopeLevel.GLOBAL);
-                stack.add(new MemberInsnNode(OUT, id));
             } else {
                 id = stack.state().addMember(name, MemberType.OUTPUT_VARIABLE, InterpreterState.ScopeLevel.GLOBAL);
-                stack.add(new MemberInsnNode(OUT, id));
             }
+            stack.add(new MemberInsnNode(OUT, id));
             return true;
         }
 

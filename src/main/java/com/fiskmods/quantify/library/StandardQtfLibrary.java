@@ -1,20 +1,16 @@
 package com.fiskmods.quantify.library;
 
-import com.fiskmods.quantify.member.QtfFunction;
-import com.fiskmods.quantify.util.DoubleTernaryOperator;
+import com.fiskmods.quantify.jvm.FunctionAddress;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.DoubleBinaryOperator;
-import java.util.function.DoubleSupplier;
-import java.util.function.DoubleUnaryOperator;
 
 public class StandardQtfLibrary implements QtfLibrary {
     private final String key;
     private final Map<String, Double> constants;
-    private final Map<String, QtfFunction> functions;
+    private final Map<String, FunctionAddress> functions;
 
-    private StandardQtfLibrary(String key, Map<String, Double> constants, Map<String, QtfFunction> functions) {
+    private StandardQtfLibrary(String key, Map<String, Double> constants, Map<String, FunctionAddress> functions) {
         this.key = key;
         this.constants = constants;
         this.functions = functions;
@@ -31,7 +27,7 @@ public class StandardQtfLibrary implements QtfLibrary {
     }
 
     @Override
-    public QtfFunction getFunction(String name) {
+    public FunctionAddress getFunction(String name) {
         return functions.get(name);
     }
 
@@ -41,7 +37,7 @@ public class StandardQtfLibrary implements QtfLibrary {
 
     public static class Builder {
         private final Map<String, Double> constants = new HashMap<>();
-        private final Map<String, QtfFunction> functions = new HashMap<>();
+        private final Map<String, FunctionAddress> functions = new HashMap<>();
 
         public Builder addConstant(String name, double value) {
             functions.remove(name);
@@ -49,32 +45,16 @@ public class StandardQtfLibrary implements QtfLibrary {
             return this;
         }
 
-        public Builder addFunction(String name, QtfFunction function) {
+        public Builder addFunction(String name, FunctionAddress function) {
             constants.remove(name);
             functions.put(name, function);
             return this;
         }
 
-        public Builder addFunction(String name, int parameters, QtfFunction.Func func) {
+        public Builder addFunction(String owner, String name, int parameters) {
             constants.remove(name);
-            functions.put(name, new QtfFunction(parameters, func));
+            functions.put(name, new FunctionAddress(owner, name, parameters));
             return this;
-        }
-
-        public Builder addFunction(String name, DoubleSupplier func) {
-            return addFunction(name, QtfFunction.compose(func));
-        }
-
-        public Builder addFunction(String name, DoubleUnaryOperator func) {
-            return addFunction(name, QtfFunction.compose(func));
-        }
-
-        public Builder addFunction(String name, DoubleBinaryOperator func) {
-            return addFunction(name, QtfFunction.compose(func));
-        }
-
-        public Builder addFunction(String name, DoubleTernaryOperator func) {
-            return addFunction(name, QtfFunction.compose(func));
         }
 
         public StandardQtfLibrary build(String key) {

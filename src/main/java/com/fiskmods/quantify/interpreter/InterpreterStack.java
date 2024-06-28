@@ -5,7 +5,6 @@ import com.fiskmods.quantify.QtfSyntax;
 import com.fiskmods.quantify.exception.QtfParseException;
 import com.fiskmods.quantify.insn.InsnNode;
 import com.fiskmods.quantify.insn.Instruction;
-import com.fiskmods.quantify.insn.MemberInsnNode;
 import com.fiskmods.quantify.member.MemberMap;
 import com.fiskmods.quantify.util.TokenReader;
 import com.fiskmods.quantify.validator.LineValidator;
@@ -17,7 +16,6 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import static com.fiskmods.quantify.exception.QtfParseException.unexpectedToken;
-import static com.fiskmods.quantify.insn.Instruction.OUT;
 
 public class InterpreterStack implements Iterable<Interpreter> {
     private final List<InsnNode> nodes = new ArrayList<>();
@@ -111,15 +109,10 @@ public class InterpreterStack implements Iterable<Interpreter> {
 
     public InterpretedScript build() throws QtfParseException {
         newLine();
-        int maxS = state.computeMaxS();
         for (int i = 0; i < nodes.size(); ++i) {
-            InsnNode node = nodes.get(i);
-            node.index = i;
-            if (node.instruction == OUT && node instanceof MemberInsnNode m) {
-                m.id += maxS;
-            }
+            nodes.get(i).index = i;
         }
-        return new InterpretedScript(nodes, state.compile(maxS), state);
+        return new InterpretedScript(nodes, state.compile(), state);
     }
 
     @Override

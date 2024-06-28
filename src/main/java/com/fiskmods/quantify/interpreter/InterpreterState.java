@@ -2,8 +2,11 @@ package com.fiskmods.quantify.interpreter;
 
 import com.fiskmods.quantify.exception.QtfException;
 import com.fiskmods.quantify.exception.QtfParseException;
+import com.fiskmods.quantify.jvm.FunctionAddress;
 import com.fiskmods.quantify.library.QtfLibrary;
-import com.fiskmods.quantify.member.*;
+import com.fiskmods.quantify.member.MemberMap;
+import com.fiskmods.quantify.member.MemberType;
+import com.fiskmods.quantify.member.Scope;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -18,9 +21,7 @@ public class InterpreterState {
     private final LinkedList<Scope> currentScope = new LinkedList<>();
 
     private final String[] libraryKeys;
-    private QtfFunction[] functions = new QtfFunction[8];
-
-    private final InputState inputs = new InputState();
+    private FunctionAddress[] functions = new FunctionAddress[8];
 
     private final InterpreterStack stack;
 
@@ -31,26 +32,16 @@ public class InterpreterState {
         allScopes.add(globalScope);
     }
 
-    public int computeMaxS() {
-        return allScopes.stream()
-                .mapToInt(t -> t.getIdMap(MemberType.VARIABLE).size())
-                .max().orElse(0);
-    }
-
-    public MemberMap compile(int maxS) throws QtfParseException {
+    public MemberMap compile() throws QtfParseException {
         if (currentScope.size() > 1) {
             stack.reader.mark();
             throw QtfParseException.error(stack.reader, "unbalanced stack: " + currentScope.size());
         }
-        return new MemberMap(globalScope, maxS, functions);
+        return new MemberMap(globalScope, functions);
     }
 
     public Scope scope() {
         return currentScope.getLast();
-    }
-
-    public InputState inputs() {
-        return inputs;
     }
 
     public void push() {
@@ -101,11 +92,11 @@ public class InterpreterState {
         return stack.parser.getLibrary(libraryKeys[id]);
     }
 
-    public int addFunction(String name, QtfFunction function) throws QtfParseException {
+    public int addFunction(String name, FunctionAddress function) throws QtfParseException {
         int id = addMember(name, MemberType.FUNCTION, ScopeLevel.GLOBAL);
         if (id >= functions.length) {
-            QtfFunction[] array = functions;
-            functions = new QtfFunction[Math.max(array.length * 2, id + 1)];
+            FunctionAddress[] array = functions;
+            functions = new FunctionAddress[Math.max(array.length * 2, id + 1)];
             System.arraycopy(array, 0, functions, 0, array.length);
         }
         functions[id] = function;
@@ -119,7 +110,7 @@ public class InterpreterState {
             return getMemberId(newName, MemberType.FUNCTION, ScopeLevel.GLOBAL);
         }
 
-        QtfFunction function = library.getFunction(name);
+        FunctionAddress function = library.getFunction(name);
         if (function == null) {
             throw error(stack.reader, "no such function '%s' in library '%s'"
                     .formatted(name, library.getKey()));

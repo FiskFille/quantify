@@ -3,7 +3,6 @@ package com.fiskmods.quantify;
 import com.fiskmods.quantify.assembly.*;
 import com.fiskmods.quantify.insn.InsnNode;
 import com.fiskmods.quantify.interpreter.*;
-import com.fiskmods.quantify.interpreter.KeywordInterpreter;
 import com.fiskmods.quantify.validator.*;
 
 import java.util.ArrayList;

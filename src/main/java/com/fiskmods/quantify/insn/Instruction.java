@@ -2,8 +2,6 @@ package com.fiskmods.quantify.insn;
 
 import com.fiskmods.quantify.util.ScanDirection;
 
-import java.util.function.DoubleBinaryOperator;
-
 public interface Instruction {
     byte MASK_PROPS  = (byte) 0xE0;
     byte MASK_VALUE  = 0x1F;
@@ -29,6 +27,7 @@ public interface Instruction {
     byte DEF = PROP_VAR;
     byte REF = PROP_VAR | 1;
     byte OUT = PROP_VAR | 2;
+    byte IN  = PROP_VAR | 3;
 
     // Function
     byte FDEF = PROP_FUNC;
@@ -137,28 +136,6 @@ public interface Instruction {
         return isVariable(instruction);
     }
 
-    static DoubleBinaryOperator getOperatorFunction(int operator) {
-        return switch (operator) {
-            case ADD -> Double::sum;
-            case SUB -> (a, b) -> a - b;
-            case MUL -> (a, b) -> a * b;
-            case DIV -> (a, b) -> a / b;
-            case POW -> Math::pow;
-            case MOD -> (a, b) -> a % b;
-
-            case EQS -> (a, b) -> a == b ? 1 : 0;
-            case NEQ -> (a, b) -> a != b ? 1 : 0;
-            case LT  -> (a, b) -> a < b ? 1 : 0;
-            case GT  -> (a, b) -> a > b ? 1 : 0;
-            case LEQ -> (a, b) -> a <= b ? 1 : 0;
-            case GEQ -> (a, b) -> a >= b ? 1 : 0;
-
-            case AND -> (a, b) -> a > 0 && b > 0 ? 1 : 0;
-            case OR  -> (a, b) -> a > 0 || b > 0 ? 1 : 0;
-            default -> null;
-        };
-    }
-
     static int toAssignment(int operator) {
         return (operator & MASK_VALUE) | PROP_ASSIGN;
     }
@@ -182,6 +159,7 @@ public interface Instruction {
             case DEF -> "DEF";
             case REF -> "REF";
             case OUT -> "OUT";
+            case IN -> "IN";
 
             case FDEF -> "FDEF";
             case FREF -> "FREF";

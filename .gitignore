@@ -11,3 +11,6 @@ run/
 .gradle/
 build/
 gradle.properties
+
+# QTF
+debug/

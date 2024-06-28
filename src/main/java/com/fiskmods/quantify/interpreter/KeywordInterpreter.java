@@ -34,16 +34,15 @@ public enum KeywordInterpreter implements Interpreter {
             case INPUT -> {
                 QtfUtil.consumeChar(reader, '[');
                 int index = QtfUtil.extractInteger(reader);
-                if (stack.state().inputs().containsIndex(index)) {
-                    throw QtfParseException.error(reader, "duplicate input index '%d'".formatted(index));
-                }
-
                 QtfUtil.consumeChar(reader, ']');
                 QtfUtil.consumeChar(reader, ':');
-                String name = QtfUtil.extractName(reader);
 
+                String name = QtfUtil.extractName(reader);
                 int id = stack.state().addMember(name, MemberType.VARIABLE, InterpreterState.ScopeLevel.GLOBAL);
-                stack.state().inputs().add(index, id);
+
+                stack.add(new MemberInsnNode(Instruction.DEF, id));
+                stack.add(Instruction.EQ);
+                stack.add(new MemberInsnNode(Instruction.IN, index));
                 yield true;
             }
             case OUTPUT -> {
