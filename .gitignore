@@ -13,4 +13,5 @@ build/
 gradle.properties
 
 # QTF
+src/test/
 debug/
