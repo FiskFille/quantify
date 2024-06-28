@@ -4,6 +4,7 @@ import com.fiskmods.quantify.exception.QtfAssemblyException;
 import com.fiskmods.quantify.insn.InsnNode;
 import com.fiskmods.quantify.jvm.JvmFunction;
 import com.fiskmods.quantify.script.QtfEvaluator;
+import org.objectweb.asm.Opcodes;
 
 import java.util.List;
 
@@ -16,6 +17,8 @@ public enum ExecutionAssembler implements Assembler {
 
     @Override
     public JvmFunction assemble(List<InsnNode> nodes, JvmFunction.Supplier nextLine, QtfEvaluator evaluator) throws QtfAssemblyException {
-        return ExpressionAssembler.assemble(nodes, evaluator);
+        return ExpressionAssembler.assemble(nodes, evaluator)
+                // No dangling data in the stack
+                .andThen(JvmFunction.insn(Opcodes.POP2));
     }
 }
