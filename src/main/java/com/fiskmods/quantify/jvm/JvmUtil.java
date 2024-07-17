@@ -10,16 +10,6 @@ import static com.fiskmods.quantify.insn.Instruction.*;
 import static org.objectweb.asm.Opcodes.*;
 
 public class JvmUtil {
-    public static JvmFunction dconst(double value) {
-        if (value == 0) {
-            return JvmFunction.insn(DCONST_0);
-        }
-        if (value == 1) {
-            return JvmFunction.insn(DCONST_1);
-        }
-        return mv -> mv.visitLdcInsn(value);
-    }
-
     public static JvmFunction binaryOperator(JvmFunction operator, JvmFunction left, JvmFunction right) {
         return mv -> {
             left.apply(mv);
@@ -52,17 +42,17 @@ public class JvmUtil {
             return f;
         }
         if (obj instanceof Number n) {
-            return dconst(n.doubleValue());
+            return JvmLiteral.dconst(n.doubleValue());
         }
         if (obj instanceof InsnNode node) {
             if (isVariable(node.instruction) && obj instanceof MemberInsnNode member) {
                 return QtfMemory.get(member.id, VariableType.get(member.instruction)).negateIf(member.isNegative());
             }
             if (obj instanceof CstInsnNode cst) {
-                return dconst(cst.value);
+                return JvmLiteral.dconst(cst.value);
             }
             if (isConstant(node.instruction)) {
-                return dconst(getConstantValue(node.instruction));
+                return JvmLiteral.dconst(getConstantValue(node.instruction));
             }
         }
         return null;

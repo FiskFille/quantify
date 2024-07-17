@@ -141,6 +141,26 @@ public class QtfMemory {
     public static JvmFunction lerp(Address var, Address lerp, boolean rotational, JvmFunction result) {
         final String QTF_MATH = "com/fiskmods/quantify/library/QtfMath";
         return mv -> {
+            if (!rotational && result instanceof JvmLiteral lit && lit.value() == 0) {
+                if (var.type.isExternal()) {
+                    JvmUtil.arrayModify(mv, var.type.refOffset(), var.id, ignored -> {
+                        mv.visitInsn(DCONST_1);
+                        get(lerp.id, lerp.type).apply(mv);
+                        mv.visitInsn(DSUB);
+                        mv.visitInsn(DMUL);
+                    });
+                }
+                else {
+                    mv.visitVarInsn(DLOAD, var.id * 2 + LOCAL_INDEX);
+                    mv.visitInsn(DCONST_1);
+                    get(lerp.id, lerp.type).apply(mv);
+                    mv.visitInsn(DSUB);
+                    mv.visitInsn(DMUL);
+                    mv.visitVarInsn(DSTORE, var.id * 2 + LOCAL_INDEX);
+                }
+                return;
+            }
+
             if (var.type.isExternal()) {
                 JvmUtil.arrayModify(mv, var.type.refOffset(), var.id, ignored -> {
                     get(lerp.id, lerp.type).apply(mv);
