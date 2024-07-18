@@ -165,7 +165,7 @@ public class ExpressionAssembler {
         }
         assembly.remove(index + 1);
         assembly.remove(index);
-        assembly.set(--index, JvmUtil.binaryOperator(func, left, right));
+        assembly.set(--index, JvmUtil.binaryOperator(node, func, left, right));
         return index;
     }
 }

@@ -4,6 +4,7 @@ import com.fiskmods.quantify.exception.QtfAssemblyException;
 import com.fiskmods.quantify.insn.InsnNode;
 import com.fiskmods.quantify.insn.WithInsnNode;
 import com.fiskmods.quantify.jvm.JvmFunction;
+import com.fiskmods.quantify.jvm.JvmLiteral;
 import com.fiskmods.quantify.jvm.VariableType;
 import com.fiskmods.quantify.member.QtfMemory;
 import com.fiskmods.quantify.script.QtfEvaluator;
@@ -42,6 +43,12 @@ public enum ClauseAssembler implements Assembler {
                                    QtfEvaluator evaluator) throws QtfAssemblyException {
         JvmFunction condition = ExpressionAssembler.assemble(nodes.subList(1, nodes.size()), evaluator);
         JvmFunction rest = assembleClauseLines(nextLine);
+        if (condition instanceof JvmLiteral lit) {
+            if (lit.value() > 0) {
+                return rest;
+            }
+            return JvmFunction.EMPTY;
+        }
         return mv -> {
             Label l = new Label();
             condition.apply(mv);

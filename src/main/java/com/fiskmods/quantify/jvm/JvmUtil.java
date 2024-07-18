@@ -10,11 +10,36 @@ import static com.fiskmods.quantify.insn.Instruction.*;
 import static org.objectweb.asm.Opcodes.*;
 
 public class JvmUtil {
-    public static JvmFunction binaryOperator(JvmFunction operator, JvmFunction left, JvmFunction right) {
+    public static JvmFunction binaryOperator(InsnNode node, JvmFunction operator, JvmFunction left, JvmFunction right) {
+        if (left instanceof JvmLiteral l && right instanceof JvmLiteral r) {
+            Double d = computeOperator(node.instruction, l.value(), r.value());
+            if (d != null) {
+                return new JvmLiteral(d);
+            }
+        }
         return mv -> {
             left.apply(mv);
             right.apply(mv);
             operator.apply(mv);
+        };
+    }
+
+    private static Double computeOperator(int instruction, double l, double r) {
+        return switch (instruction) {
+            case ADD, OR -> l + r;
+            case SUB -> l - r;
+            case MUL, AND -> l * r;
+            case DIV -> l / r;
+            case POW -> Math.pow(l, r);
+            case MOD -> l % r;
+
+            case EQS -> l == r ? 1.0 : 0.0;
+            case NEQ -> l == r ? 0.0 : 1.0;
+            case LT  -> l < r ? 1.0 : 0.0;
+            case GT  -> l > r ? 1.0 : 0.0;
+            case LEQ -> l <= r ? 1.0 : 0.0;
+            case GEQ -> l >= r ? 1.0 : 0.0;
+            default -> null;
         };
     }
 
@@ -42,17 +67,17 @@ public class JvmUtil {
             return f;
         }
         if (obj instanceof Number n) {
-            return JvmLiteral.dconst(n.doubleValue());
+            return new JvmLiteral(n.doubleValue());
         }
         if (obj instanceof InsnNode node) {
             if (isVariable(node.instruction) && obj instanceof MemberInsnNode member) {
                 return QtfMemory.get(member.id, VariableType.get(member.instruction)).negateIf(member.isNegative());
             }
             if (obj instanceof CstInsnNode cst) {
-                return JvmLiteral.dconst(cst.value);
+                return new JvmLiteral(cst.value);
             }
             if (isConstant(node.instruction)) {
-                return JvmLiteral.dconst(getConstantValue(node.instruction));
+                return new JvmLiteral(getConstantValue(node.instruction));
             }
         }
         return null;
