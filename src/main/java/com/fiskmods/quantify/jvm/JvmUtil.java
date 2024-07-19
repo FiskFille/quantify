@@ -11,9 +11,23 @@ import static org.objectweb.asm.Opcodes.*;
 
 public class JvmUtil {
     public static JvmFunction binaryOperator(InsnNode node, JvmFunction operator, JvmFunction left, JvmFunction right) {
+        if (node.instruction == MUL || node.instruction == AND) {
+            // Any multiplication where one factor is 1 is redundant
+            if (left instanceof JvmLiteral lit && lit.value() == 1) {
+                return right;
+            }
+            if (right instanceof JvmLiteral lit && lit.value() == 1) {
+                return left;
+            }
+        }
+        if (node.instruction == DIV && right instanceof JvmLiteral lit && lit.value() == 1) {
+            // Any division where the divisor is 1 is redundant
+            return left;
+        }
         if (left instanceof JvmLiteral l && right instanceof JvmLiteral r) {
             Double d = computeOperator(node.instruction, l.value(), r.value());
             if (d != null) {
+                // Pre-compute literal arithmetic
                 return new JvmLiteral(d);
             }
         }
