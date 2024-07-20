@@ -57,15 +57,15 @@ public class QtfParser {
     }
 
     private String nextName() {
-        return "Compiled" + ++nextId;
-    }
-
-    public QtfScript compile(String text) throws QtfParseException, QtfAssemblyException {
-        return evaluate(text).compile(nextName(), classLoader);
+        return "com.fiskmods.quantify.dynamic.Compiled" + ++nextId;
     }
 
     public QtfScript compile(String text, QtfListener listener) throws QtfParseException, QtfAssemblyException {
         return evaluate(text).compile(nextName(), classLoader, listener);
+    }
+
+    public QtfScript compile(String text) throws QtfParseException, QtfAssemblyException {
+        return compile(text, QtfListener.IGNORE);
     }
 
     public InterpreterStack.InterpretedScript interpret(String text) throws QtfParseException {

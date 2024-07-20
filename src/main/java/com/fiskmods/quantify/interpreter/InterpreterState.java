@@ -8,10 +8,7 @@ import com.fiskmods.quantify.member.MemberMap;
 import com.fiskmods.quantify.member.MemberType;
 import com.fiskmods.quantify.member.Scope;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.StringJoiner;
+import java.util.*;
 
 import static com.fiskmods.quantify.exception.QtfParseException.error;
 
@@ -20,6 +17,7 @@ public class InterpreterState {
     private final List<Scope> allScopes = new ArrayList<>();
     private final LinkedList<Scope> currentScope = new LinkedList<>();
 
+    private final Map<String, Integer> inputs = new HashMap<>();
     private final String[] libraryKeys;
     private FunctionAddress[] functions = new FunctionAddress[8];
 
@@ -37,7 +35,7 @@ public class InterpreterState {
             stack.reader.mark();
             throw QtfParseException.error(stack.reader, "unbalanced stack: " + currentScope.size());
         }
-        return new MemberMap(globalScope, functions);
+        return new MemberMap(globalScope, functions, inputs);
     }
 
     public Scope scope() {
@@ -58,6 +56,10 @@ public class InterpreterState {
         }
         allScopes.add(currentScope.removeLast());
         return true;
+    }
+
+    public void addInput(String name, int index) {
+        inputs.put(name, index);
     }
 
     public int addMember(String name, MemberType type, ScopeLevel level) throws QtfParseException {

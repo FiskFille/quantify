@@ -1,7 +1,5 @@
 package com.fiskmods.quantify.member;
 
-import com.fiskmods.quantify.assembly.AssemblyFunction;
-import com.fiskmods.quantify.exception.QtfExecutionException;
 import com.fiskmods.quantify.jvm.*;
 
 import static org.objectweb.asm.Opcodes.*;
@@ -10,11 +8,11 @@ public class QtfMemory {
     public static final int LOCAL_INDEX = 3;
 
     private final double[] output;
-    private final FunctionAddress[] funcs;
+    private final FunctionAddress[] functions;
 
-    public QtfMemory(double[] output, FunctionAddress[] funcs) {
+    public QtfMemory(double[] output, FunctionAddress[] functions) {
         this.output = output;
-        this.funcs = funcs;
+        this.functions = functions;
     }
 
     public void run(JvmRunnable runnable, double[] input) {
@@ -25,8 +23,8 @@ public class QtfMemory {
         for (int i = 0; i < output.length; ++i) {
             System.out.println("V " + i + ": " + output[i]);
         }
-        for (int i = 0; i < funcs.length; ++i) {
-            System.out.println("F " + i + ": " + funcs[i]);
+        for (int i = 0; i < functions.length; ++i) {
+            System.out.println("F " + i + ": " + functions[i]);
         }
     }
 
@@ -45,18 +43,6 @@ public class QtfMemory {
                 output[id] = value;
             }
         };
-    }
-
-    double cast(Object result) throws QtfExecutionException {
-        if (result instanceof AssemblyFunction f) {
-            return f.apply(this);
-        }
-        try {
-            return ((Number) result).doubleValue();
-        }
-        catch (ClassCastException | NullPointerException e) {
-            throw new QtfExecutionException("Unknown result type: " + result);
-        }
     }
 
     public static JvmFunction get(int id, VariableType type) {

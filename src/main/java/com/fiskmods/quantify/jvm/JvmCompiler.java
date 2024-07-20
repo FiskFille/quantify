@@ -17,7 +17,7 @@ public class JvmCompiler {
     public static ClassWriter compile(JvmFunction function, String name) {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
         MethodVisitor mv;
-        cw.visit(49, ACC_PUBLIC + ACC_SUPER, name, null, "java/lang/Object",
+        cw.visit(61, ACC_PUBLIC + ACC_SUPER, name, null, "java/lang/Object",
                 new String[] {RUNNABLE_SCRIPT});
         cw.visitSource(name + ".java", null);
         mv = cw.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
@@ -37,7 +37,7 @@ public class JvmCompiler {
 
     public static JvmRunnable compile(JvmFunction function, String name, DynamicClassLoader classLoader)
             throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        byte[] b = compile(function, name).toByteArray();
+        byte[] b = compile(function, name.replace('.', '/')).toByteArray();
         if (QtfParser.DEBUG) {
             writeClassFile(name, b);
         }

@@ -40,20 +40,10 @@ public class QtfEvaluator {
         return members.getFunctions()[node.id];
     }
 
-    public QtfScript compile(String name, DynamicClassLoader classLoader) throws QtfAssemblyException {
-        try {
-            JvmRunnable runnable = JvmCompiler.compile(assemble(), name, classLoader);
-            return new QtfScript(runnable, members.createMemory());
-        }
-        catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
-            throw new QtfAssemblyException(e.toString());
-        }
-    }
-
     public QtfScript compile(String name, DynamicClassLoader classLoader, QtfListener listener) throws QtfAssemblyException {
         try {
             JvmRunnable runnable = JvmCompiler.compile(assemble(), name, classLoader);
-            return new QtfScript(runnable, members.createMemory(listener));
+            return new QtfScript(runnable, members.createMemory(listener), members.getInputs());
         }
         catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
             throw new QtfAssemblyException(e.toString());

@@ -18,4 +18,9 @@ public record JvmLiteral(double value) implements JvmFunction {
             mv.visitLdcInsn(value);
         }
     }
+
+    @Override
+    public JvmFunction negate() {
+        return new JvmLiteral(-value);
+    }
 }

@@ -39,6 +39,7 @@ public enum KeywordInterpreter implements Interpreter {
 
                 String name = QtfUtil.extractName(reader);
                 int id = stack.state().addMember(name, MemberType.VARIABLE, InterpreterState.ScopeLevel.GLOBAL);
+                stack.state().addInput(name, index);
 
                 stack.add(new MemberInsnNode(Instruction.DEF, id));
                 stack.add(Instruction.EQ);

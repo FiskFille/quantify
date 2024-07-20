@@ -4,6 +4,8 @@ import java.util.stream.Stream;
 
 @FunctionalInterface
 public interface QtfListener {
+    QtfListener IGNORE = (resolver, output) -> { };
+
     void listen(Resolver resolver, Output output);
 
     @FunctionalInterface
