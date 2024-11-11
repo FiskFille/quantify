@@ -14,6 +14,7 @@ import com.fiskmods.quantify.util.TokenReader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.StringJoiner;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import static com.fiskmods.quantify.exception.QtfParseException.unknownToken;
@@ -26,7 +27,7 @@ public class QtfParser {
     private final Supplier<DynamicClassLoader> classLoaderFactory;
 
     private DynamicClassLoader classLoader;
-    private int nextClassId = -1;
+    private final AtomicInteger nextClassId = new AtomicInteger();
 
     public QtfParser(QtfSyntax syntax, Supplier<DynamicClassLoader> classLoader) {
         this.syntax = syntax;
@@ -68,7 +69,7 @@ public class QtfParser {
     }
 
     private String nextName() {
-        return "com.fiskmods.quantify.dynamic.Compiled" + ++nextClassId;
+        return "com.fiskmods.quantify.dynamic.Compiled" + nextClassId.getAndIncrement();
     }
 
     public QtfScript compile(String text, QtfListener listener) throws QtfParseException, QtfAssemblyException {
