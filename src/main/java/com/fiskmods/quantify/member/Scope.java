@@ -1,6 +1,7 @@
 package com.fiskmods.quantify.member;
 
 import com.fiskmods.quantify.exception.QtfException;
+import com.fiskmods.quantify.library.QtfLibrary;
 
 import java.util.*;
 
@@ -8,7 +9,7 @@ public class Scope {
     private final Map<String, MemberType> types = new HashMap<>();
     private final Map<MemberType, List<String>> ids = new EnumMap<>(MemberType.class);
 
-    private int namespace = -1;
+    private QtfLibrary namespace;
 
     public Scope copy() {
         Scope scope = new Scope();
@@ -18,12 +19,11 @@ public class Scope {
         return scope;
     }
 
-    public Scope setNamespace(int namespace) {
+    public void setNamespace(QtfLibrary namespace) {
         this.namespace = namespace;
-        return this;
     }
 
-    public int getNamespace() {
+    public QtfLibrary getNamespace() {
         return namespace;
     }
 
@@ -48,17 +48,17 @@ public class Scope {
     public int get(String name, MemberType expectedType) throws QtfException {
         MemberType foundType = types.get(name);
         if (foundType == null) {
-            throw new QtfException("undefined %s '%s'".formatted(expectedType, name));
+            throw new QtfException("Undefined %s '%s'".formatted(expectedType, name));
         }
         if (foundType != expectedType) {
-            throw new QtfException("expected '%s' to be a %s, was %s"
+            throw new QtfException("Expected '%s' to be a %s, was %s"
                     .formatted(name, expectedType, foundType));
         }
 
         int id = ids.computeIfAbsent(expectedType, k -> new ArrayList<>())
                 .indexOf(name);
         if (id == -1) {
-            throw new QtfException("nonexistent %s id %s".formatted(expectedType, id));
+            throw new QtfException("Nonexistent %s id %s".formatted(expectedType, id));
         }
         return id;
     }

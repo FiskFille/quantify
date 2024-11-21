@@ -1,25 +1,12 @@
 package com.fiskmods.quantify.jvm;
 
-import com.fiskmods.quantify.exception.QtfAssemblyException;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 
-import static com.fiskmods.quantify.insn.Instruction.*;
 import static org.objectweb.asm.Opcodes.*;
 
 @FunctionalInterface
 public interface JvmFunction {
-    JvmFunction EMPTY = new JvmFunction() {
-        @Override
-        public void apply(MethodVisitor mv) {
-        }
-
-        @Override
-        public JvmFunction andThen(JvmFunction next) {
-            return next;
-        }
-    };
-
     JvmFunction _ADD = insn(DADD);
     JvmFunction _SUB = insn(DSUB);
     JvmFunction _MUL = insn(DMUL);
@@ -69,29 +56,5 @@ public interface JvmFunction {
             mv.visitInsn(DCONST_1);
             mv.visitLabel(end);
         };
-    }
-
-    static JvmFunction getOperatorFunction(int operator) {
-        return switch (operator) {
-            case ADD, OR -> _ADD;
-            case SUB -> _SUB;
-            case MUL, AND -> _MUL;
-            case DIV -> _DIV;
-            case POW -> _POW;
-            case MOD -> _REM;
-
-            case EQS -> _EQS;
-            case NEQ -> _NEQ;
-            case LT  -> _LT;
-            case GT  -> _GT;
-            case LEQ -> _LEQ;
-            case GEQ -> _GEQ;
-            default -> null;
-        };
-    }
-
-    @FunctionalInterface
-    interface Supplier {
-        JvmFunction get() throws QtfAssemblyException;
     }
 }

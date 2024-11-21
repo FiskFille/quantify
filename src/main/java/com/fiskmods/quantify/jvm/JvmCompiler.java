@@ -1,6 +1,6 @@
 package com.fiskmods.quantify.jvm;
 
-import com.fiskmods.quantify.QtfParser;
+import com.fiskmods.quantify.QtfCompiler;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
@@ -38,7 +38,7 @@ public class JvmCompiler {
     public static JvmRunnable compile(JvmFunction function, String name, DynamicClassLoader classLoader)
             throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         byte[] b = compile(function, name.replace('.', '/')).toByteArray();
-        if (QtfParser.DEBUG) {
+        if (QtfCompiler.DEBUG) {
             writeClassFile(name, b);
         }
         Class<?> c = classLoader.defineClass(name, b);

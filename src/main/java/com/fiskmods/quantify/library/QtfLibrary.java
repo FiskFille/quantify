@@ -8,4 +8,8 @@ public interface QtfLibrary {
     Double getConstant(String name);
 
     FunctionAddress getFunction(String name);
+
+    default boolean hasFunction(String name) {
+        return getFunction(name) != null;
+    }
 }
