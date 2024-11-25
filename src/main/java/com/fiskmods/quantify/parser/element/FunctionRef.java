@@ -1,5 +1,6 @@
 package com.fiskmods.quantify.parser.element;
 
+import com.fiskmods.quantify.exception.QtfException;
 import com.fiskmods.quantify.exception.QtfParseException;
 import com.fiskmods.quantify.jvm.FunctionAddress;
 import com.fiskmods.quantify.lexer.token.Token;
@@ -22,8 +23,12 @@ record FunctionRef(FunctionAddress address, Value[] params, boolean hasResult) i
 
     public static SyntaxParser<FunctionRef> parser(Namespace namespace, boolean hasResult) {
         return (parser, context) -> {
-            String name = parser.next(TokenClass.IDENTIFIER).getString();
-            return parser.next(parser(namespace.getFunction(name), hasResult));
+            try {
+                String name = parser.next(TokenClass.IDENTIFIER).getString();
+                return parser.next(parser(namespace.getFunction(name), hasResult));
+            } catch (QtfException e) {
+                throw new QtfParseException(e);
+            }
         };
     }
 
@@ -56,7 +61,7 @@ record FunctionRef(FunctionAddress address, Value[] params, boolean hasResult) i
                 if (!params.isEmpty()) {
                     parser.next(TokenClass.COMMA);
                 }
-                params.add(parser.next(Expression::acceptEnclosed));
+                params.add(parser.next(ExpressionParser.INSTANCE));
             } while (parser.isNext(TokenClass.COMMA));
 
             Token token = parser.next(TokenClass.CLOSE_PARENTHESIS);

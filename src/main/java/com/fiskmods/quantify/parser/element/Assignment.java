@@ -36,7 +36,7 @@ interface Assignment extends SyntaxElement {
                 }
             }
 
-            Value value = parser.next(Expression::acceptEnclosed);
+            Value value = parser.next(ExpressionParser.INSTANCE);
             if (op == Operator.LERP || op == Operator.LERP_ROT) {
                 return new LerpAssignment(target, value, context.scope().getLerpProgress(),
                         op == Operator.LERP_ROT);

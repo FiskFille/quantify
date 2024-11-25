@@ -34,7 +34,7 @@ record InterpolateStatement(Value progress, VariableRef substitution, SyntaxElem
 
             parser.next(TokenClass.INTERPOLATE);
             parser.next(TokenClass.OPEN_PARENTHESIS);
-            progress = parser.next(Expression::acceptEnclosed);
+            progress = parser.next(ExpressionParser.INSTANCE);
             parser.next(TokenClass.CLOSE_PARENTHESIS);
             parser.skip(TokenClass.TERMINATOR);
 

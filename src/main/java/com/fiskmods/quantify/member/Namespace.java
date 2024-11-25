@@ -10,17 +10,13 @@ public interface Namespace {
 
     boolean hasVariable(String name);
 
-    FunctionAddress getFunction(String name);
+    FunctionAddress getFunction(String name) throws QtfException;
 
-    default boolean hasFunction(String name) {
-        return getFunction(name) != null;
-    }
+    boolean hasFunction(String name);
 
-    Double getConstant(String name);
+    double getConstant(String name) throws QtfException;
 
-    default boolean hasConstant(String name) {
-        return getConstant(name) != null;
-    }
+    boolean hasConstant(String name);
 
     static Namespace of(QtfLibrary library) {
         return new Namespace() {
@@ -41,8 +37,18 @@ public interface Namespace {
             }
 
             @Override
-            public Double getConstant(String name) {
+            public boolean hasFunction(String name) {
+                return getFunction(name) != null;
+            }
+
+            @Override
+            public double getConstant(String name) {
                 return library.getConstant(name);
+            }
+
+            @Override
+            public boolean hasConstant(String name) {
+                return library.getConstant(name) != null;
             }
         };
     }

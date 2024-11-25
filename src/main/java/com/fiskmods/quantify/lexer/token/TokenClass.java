@@ -19,6 +19,7 @@ public enum TokenClass {
     INTERPOLATE,
     NAMESPACE,
     DEF,
+    CONST,
 
     // Symbols
     DOT,

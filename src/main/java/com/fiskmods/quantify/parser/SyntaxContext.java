@@ -5,15 +5,11 @@ import com.fiskmods.quantify.exception.QtfException;
 import com.fiskmods.quantify.exception.QtfParseException;
 import com.fiskmods.quantify.jvm.FunctionAddress;
 import com.fiskmods.quantify.jvm.VariableType;
-import com.fiskmods.quantify.member.Namespace;
 import com.fiskmods.quantify.library.QtfLibrary;
 import com.fiskmods.quantify.member.*;
 import com.fiskmods.quantify.parser.element.VariableRef;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.UnaryOperator;
 
 public class SyntaxContext {
@@ -21,6 +17,7 @@ public class SyntaxContext {
 
     private final Scope globalScope = new Scope(defaultNamespace);
     private final LinkedList<Scope> currentScope = new LinkedList<>();
+    private final List<Double> constants = new ArrayList<>();
 
     private final Map<String, Integer> inputs = new HashMap<>();
     private final String[] libraryKeys;
@@ -63,8 +60,13 @@ public class SyntaxContext {
         inputs.put(name, index);
     }
 
+    public void addConstant(String name, double value) throws QtfParseException {
+        addMember(name, MemberType.CONSTANT);
+        constants.add(value);
+    }
+
     private Scope getScopeFor(MemberType type) {
-        return type == MemberType.VARIABLE ? scope() : globalScope;
+        return type.isGlobal() ? scope() : globalScope;
     }
 
     public int addMember(String name, MemberType type) throws QtfParseException {
@@ -145,8 +147,19 @@ public class SyntaxContext {
         }
 
         @Override
-        public Double getConstant(String name) {
-            return null;
+        public boolean hasFunction(String name) {
+            return false;
+        }
+
+        @Override
+        public double getConstant(String name) throws QtfException {
+            int id = scope().get(name, MemberType.CONSTANT);
+            return constants.get(id);
+        }
+
+        @Override
+        public boolean hasConstant(String name) {
+            return scope().has(name, MemberType.CONSTANT);
         }
     }
 }

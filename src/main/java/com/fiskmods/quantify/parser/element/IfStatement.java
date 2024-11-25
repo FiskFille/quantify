@@ -47,7 +47,7 @@ record IfStatement(Value condition, SyntaxElement body, SyntaxElement elseBody) 
         public IfStatement accept(QtfParser parser, SyntaxContext context) throws QtfParseException {
             parser.next(TokenClass.IF);
             parser.next(TokenClass.OPEN_PARENTHESIS);
-            Value condition = parser.next(Expression::acceptEnclosed);
+            Value condition = parser.next(ExpressionParser.INSTANCE);
             parser.next(TokenClass.CLOSE_PARENTHESIS);
             parser.skip(TokenClass.TERMINATOR);
 

@@ -2,6 +2,7 @@ package com.fiskmods.quantify.lexer;
 
 public interface Keywords {
     String DEF = "def";
+    String CONST = "const";
     String THIS = "this";
     String IMPORT = "import";
     String INPUT = "input";

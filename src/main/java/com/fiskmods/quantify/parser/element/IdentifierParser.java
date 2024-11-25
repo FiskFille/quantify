@@ -27,13 +27,13 @@ class IdentifierParser implements SyntaxParser<Value> {
 
     private Value accept(QtfParser parser, SyntaxContext context, Namespace namespace, String name,
                          boolean isImplicit) throws QtfParseException {
-        if (namespace.hasFunction(name)) {
-            return parser.next(FunctionRef.parser(namespace.getFunction(name), true));
-        }
-        if (namespace.hasConstant(name)) {
-            return new NumLiteral(namespace.getConstant(name));
-        }
         try {
+            if (namespace.hasFunction(name)) {
+                return parser.next(FunctionRef.parser(namespace.getFunction(name), true));
+            }
+            if (namespace.hasConstant(name)) {
+                return new NumLiteral(namespace.getConstant(name));
+            }
             return namespace.computeVariable(name, false);
         } catch (QtfException e) {
             // If nothing was found in the library, search locally

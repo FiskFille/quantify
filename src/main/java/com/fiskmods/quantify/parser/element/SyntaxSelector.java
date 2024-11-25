@@ -3,9 +3,9 @@ package com.fiskmods.quantify.parser.element;
 import com.fiskmods.quantify.exception.QtfParseException;
 import com.fiskmods.quantify.lexer.token.Token;
 import com.fiskmods.quantify.lexer.token.TokenClass;
-import com.fiskmods.quantify.member.Namespace;
 import com.fiskmods.quantify.library.QtfLibrary;
 import com.fiskmods.quantify.member.MemberType;
+import com.fiskmods.quantify.member.Namespace;
 import com.fiskmods.quantify.parser.QtfParser;
 import com.fiskmods.quantify.parser.SyntaxContext;
 import com.fiskmods.quantify.parser.SyntaxParser;
@@ -20,6 +20,8 @@ public class SyntaxSelector {
             case IF -> IfStatement.PARSER;
             case INTERPOLATE -> InterpolateStatement.PARSER;
             case NAMESPACE -> NamespaceParser.INSTANCE;
+            case CONST -> ConstDefParser.INSTANCE;
+
             case IDENTIFIER -> selectIdentifierSyntax(parser, context, next);
             case DEF -> new Assignment.AssignmentParser(true);
             default -> new Assignment.AssignmentParser(false);

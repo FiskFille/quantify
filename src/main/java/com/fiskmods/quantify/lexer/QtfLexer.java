@@ -123,6 +123,7 @@ public class QtfLexer {
                     switch (result) {
                         // Keywords
                         case Keywords.DEF -> tokens.accept(scanner.newToken(DEF));
+                        case Keywords.CONST -> tokens.accept(scanner.newToken(CONST));
                         case Keywords.IMPORT -> tokens.accept(scanner.newToken(IMPORT));
                         case Keywords.INPUT -> tokens.accept(scanner.newToken(INPUT));
                         case Keywords.OUTPUT -> tokens.accept(scanner.newToken(OUTPUT));
