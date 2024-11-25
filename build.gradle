@@ -40,7 +40,7 @@ publishing {
                 username = "$repsyUsername"
                 password = "$repsyPassword"
             }
-            url = "https://repsy.io/mvn/fiskfille/fiskmods/"
+            url = "https://repo.repsy.io/mvn/fiskfille/fiskmods/"
         }
     }
 }
