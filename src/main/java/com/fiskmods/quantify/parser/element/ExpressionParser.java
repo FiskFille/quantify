@@ -49,12 +49,12 @@ class ExpressionParser implements SyntaxParser<Value> {
         if (peeked.type() == TokenClass.OPERATOR) {
             Operator op = peeked.getOperator();
             if (op == Operator.SUB) {
-                parser.next();
-                return accept(parser, context).negate();
+                parser.clearPeekedToken();
+                return acceptValue(parser, context).negate();
             }
             if (op == Operator.ADD) {
-                parser.next();
-                return accept(parser, context);
+                parser.clearPeekedToken();
+                return acceptValue(parser, context);
             }
         }
         return switch (peeked.type()) {

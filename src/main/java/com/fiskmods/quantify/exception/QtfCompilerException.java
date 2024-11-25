@@ -1,5 +1,6 @@
 package com.fiskmods.quantify.exception;
 
+import com.fiskmods.quantify.QtfCompiler;
 import com.fiskmods.quantify.lexer.TextScanner;
 import com.fiskmods.quantify.lexer.token.Token;
 import com.fiskmods.quantify.parser.QtfParser;
@@ -11,6 +12,10 @@ public class QtfCompilerException extends QtfException {
 
     public QtfCompilerException(String message) {
         super(message);
+    }
+
+    public QtfCompilerException(String message, Throwable cause) {
+        super(message, cause);
     }
 
     public static QtfCompilerException handle(QtfLexerException cause) {
@@ -29,6 +34,7 @@ public class QtfCompilerException extends QtfException {
         if (location != null) {
             message += TextScanner.trace(text, location.startIndex());
         }
-        return new QtfCompilerException(message);
+        return QtfCompiler.DEBUG ? new QtfCompilerException(message, cause)
+                : new QtfCompilerException(message);
     }
 }

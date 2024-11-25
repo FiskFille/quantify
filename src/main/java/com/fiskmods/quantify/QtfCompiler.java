@@ -58,6 +58,9 @@ public class QtfCompiler {
             List<Token> tokens = new ArrayList<>();
             QtfLexer.read(text, tokens::add);
 
+            if (QtfCompiler.DEBUG) {
+                System.out.println(tokens);
+            }
             SyntaxContext context = new SyntaxContext(this);
             SyntaxTree syntaxTree = new SyntaxTree(context);
 

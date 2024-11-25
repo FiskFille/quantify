@@ -8,4 +8,8 @@ public class QtfException extends Exception {
     public QtfException(Throwable cause) {
         super(cause);
     }
+
+    public QtfException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }
