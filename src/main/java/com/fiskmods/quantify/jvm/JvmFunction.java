@@ -35,7 +35,7 @@ public interface JvmFunction {
     }
 
     default JvmFunction negate() {
-        return andThen(mv -> mv.visitInsn(DNEG));
+        return new NegatedJvmFunction(this);
     }
 
     default JvmFunction negateIf(boolean shouldNegate) {
@@ -58,5 +58,18 @@ public interface JvmFunction {
             mv.visitInsn(DCONST_1);
             mv.visitLabel(end);
         };
+    }
+
+    record NegatedJvmFunction(JvmFunction function) implements JvmFunction {
+        @Override
+        public void apply(MethodVisitor mv) {
+            function.apply(mv);
+            mv.visitInsn(DNEG);
+        }
+
+        @Override
+        public JvmFunction negate() {
+            return function;
+        }
     }
 }

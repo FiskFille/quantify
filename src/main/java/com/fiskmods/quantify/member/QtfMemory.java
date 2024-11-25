@@ -83,14 +83,22 @@ public class QtfMemory {
     }
 
     public static JvmFunction set(Address[] addresses, JvmFunction result) {
+        // Complex expressions only get calculated once for multi-var assignments
+        if (addresses.length > 1 && !(result instanceof NumLiteral)) {
+            return mv -> {
+                JvmFunction value = result;
+
+                for (Address a : addresses) {
+                    set(a.id, a.type, value.negateIf(a.isNegated)).apply(mv);
+                    if (value == result) {
+                        value = get(a.id, a.type).negateIf(a.isNegated);
+                    }
+                }
+            };
+        }
         return mv -> {
             for (Address a : addresses) {
-                if (a.type.isExternal()) {
-                    JvmUtil.arrayStore(mv, a.type.refOffset(), a.id, result.negateIf(a.isNegated));
-                    continue;
-                }
-                result.negateIf(a.isNegated).apply(mv);
-                mv.visitVarInsn(DSTORE, a.id * 2 + LOCAL_INDEX);
+                set(a.id, a.type, result.negateIf(a.isNegated)).apply(mv);
             }
         };
     }
@@ -98,15 +106,7 @@ public class QtfMemory {
     public static JvmFunction set(Address[] addresses, JvmFunction result, JvmFunction operator) {
         return mv -> {
             for (Address a : addresses) {
-                if (a.type.isExternal()) {
-                    JvmUtil.arrayModify(mv, a.type.refOffset(), a.id,
-                            result.negateIf(a.isNegated).andThen(operator));
-                    continue;
-                }
-                mv.visitVarInsn(DLOAD, a.id * 2 + LOCAL_INDEX);
-                result.negateIf(a.isNegated).apply(mv);
-                operator.apply(mv);
-                mv.visitVarInsn(DSTORE, a.id * 2 + LOCAL_INDEX);
+                set(a.id, a.type, result.negateIf(a.isNegated), operator).apply(mv);
             }
         };
     }
