@@ -1,5 +1,7 @@
 package com.fiskmods.quantify.member;
 
+import com.fiskmods.quantify.parser.SyntaxContext;
+
 public class Variable implements VarReference {
     private VarReference reference = VarReference.EMPTY;
 
@@ -25,8 +27,8 @@ public class Variable implements VarReference {
         return reference.isEmpty();
     }
 
-    public static QtfListener.Resolver resolve(MemberMap members, QtfMemory memory) {
+    public static QtfListener.Resolver resolve(SyntaxContext context, QtfMemory memory) {
         return (var, name) -> var.reference
-                = memory.resolve(members.getVariableId(name));
+                = memory.resolve(context.getOutputs().indexOf(name));
     }
 }

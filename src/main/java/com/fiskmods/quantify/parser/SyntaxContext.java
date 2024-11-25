@@ -4,21 +4,26 @@ import com.fiskmods.quantify.QtfCompiler;
 import com.fiskmods.quantify.exception.QtfException;
 import com.fiskmods.quantify.exception.QtfParseException;
 import com.fiskmods.quantify.jvm.FunctionAddress;
+import com.fiskmods.quantify.jvm.VariableType;
+import com.fiskmods.quantify.member.Namespace;
 import com.fiskmods.quantify.library.QtfLibrary;
-import com.fiskmods.quantify.member.MemberMap;
-import com.fiskmods.quantify.member.MemberType;
-import com.fiskmods.quantify.member.Scope;
+import com.fiskmods.quantify.member.*;
+import com.fiskmods.quantify.parser.element.VariableRef;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.function.UnaryOperator;
 
 public class SyntaxContext {
-    private final Scope globalScope = new Scope();
-    private final List<Scope> allScopes = new ArrayList<>();
+    private final Namespace defaultNamespace = new DefaultNamespace();
+
+    private final Scope globalScope = new Scope(defaultNamespace);
     private final LinkedList<Scope> currentScope = new LinkedList<>();
 
     private final Map<String, Integer> inputs = new HashMap<>();
     private final String[] libraryKeys;
-    private FunctionAddress[] functions = new FunctionAddress[8];
 
     private final QtfCompiler compiler;
 
@@ -26,31 +31,31 @@ public class SyntaxContext {
         this.compiler = compiler;
         libraryKeys = new String[compiler.libraries()];
         currentScope.add(globalScope);
-        allScopes.add(globalScope);
     }
 
-    public MemberMap compileMembers() throws QtfParseException {
-        if (currentScope.size() > 1) {
-            throw new QtfParseException("Unbalanced stack: " + currentScope.size());
-        }
-        return new MemberMap(globalScope, functions, inputs);
+    public Namespace namespace() {
+        return scope().getNamespace();
+    }
+
+    public Namespace getDefaultNamespace() {
+        return defaultNamespace;
+    }
+
+    public MemberType typeOf(String name) {
+        return scope().getType(name);
     }
 
     public Scope scope() {
         return currentScope.getLast();
     }
 
-    public void push() {
-        currentScope.add(scope().copy());
-    }
-
-    public int id() {
-        return currentScope.size() + allScopes.size() - 2;
+    public void push(UnaryOperator<Scope> scope) {
+        currentScope.add(scope.apply(scope()));
     }
 
     public void pop() {
         if (currentScope.size() > 1) {
-            allScopes.add(currentScope.removeLast());
+            currentScope.removeLast();
         }
     }
 
@@ -58,31 +63,35 @@ public class SyntaxContext {
         inputs.put(name, index);
     }
 
-    public int addMember(String name, MemberType type, ScopeLevel level) throws QtfParseException {
+    private Scope getScopeFor(MemberType type) {
+        return type == MemberType.VARIABLE ? scope() : globalScope;
+    }
+
+    public int addMember(String name, MemberType type) throws QtfParseException {
         try {
-            return level.get(this).put(name, type);
+            return getScopeFor(type).put(name, type);
         } catch (QtfException e) {
             throw new QtfParseException(e);
         }
     }
 
-    public int getMemberId(String name, MemberType expectedType, ScopeLevel level) throws QtfParseException {
+    public int getMemberId(String name, MemberType expectedType) throws QtfParseException {
         try {
-            return level.get(this).get(name, expectedType);
+            return getScopeFor(expectedType).get(name, expectedType);
         } catch (QtfException e) {
             throw new QtfParseException(e);
         }
     }
 
-    public boolean has(String name, MemberType expectedType, ScopeLevel level) {
-        return level.get(this).has(name, expectedType);
+    public boolean hasMember(String name, MemberType expectedType) {
+        return getScopeFor(expectedType).has(name, expectedType);
     }
 
     public void addLibrary(String name, String key) throws QtfParseException {
         if (compiler.getLibrary(key) == null) {
             throw new QtfParseException("Unknown library '%s'".formatted(key));
         }
-        int id = addMember(name, MemberType.LIBRARY, ScopeLevel.GLOBAL);
+        int id = addMember(name, MemberType.LIBRARY);
         libraryKeys[id] = key;
     }
 
@@ -90,21 +99,54 @@ public class SyntaxContext {
         return compiler.getLibrary(libraryKeys[id]);
     }
 
-    public int addFunction(String name, FunctionAddress function) throws QtfParseException {
-        int id = addMember(name, MemberType.FUNCTION, ScopeLevel.GLOBAL);
-        if (id >= functions.length) {
-            FunctionAddress[] array = functions;
-            functions = new FunctionAddress[Math.max(array.length * 2, id + 1)];
-            System.arraycopy(array, 0, functions, 0, array.length);
-        }
-        functions[id] = function;
-        return id;
+    public QtfLibrary getLibrary(String name) throws QtfParseException {
+        int id = getMemberId(name, MemberType.LIBRARY);
+        return getLibrary(id);
     }
 
-    public enum ScopeLevel {
-        LOCAL, GLOBAL;
-        public Scope get(SyntaxContext context) {
-            return this == GLOBAL ? context.globalScope : context.scope();
+    public Map<String, Integer> getInputs() {
+        return inputs;
+    }
+
+    public List<String> getOutputs() {
+        return globalScope.getIdMap(MemberType.OUTPUT_VARIABLE);
+    }
+
+    public QtfMemory createMemory(QtfListener listener) throws QtfParseException {
+        if (currentScope.size() > 1) {
+            throw new QtfParseException("Unbalanced stack: " + currentScope.size());
+        }
+        List<String> outputs = getOutputs();
+        QtfMemory memory = new QtfMemory(new double[outputs.size()]);
+        listener.listen(Variable.resolve(this, memory), outputs::stream);
+        return memory;
+    }
+
+    private class DefaultNamespace implements Namespace {
+        @Override
+        public VariableRef computeVariable(String name, boolean isDefinition) throws QtfException {
+            int id;
+            if (isDefinition) {
+                id = scope().put(name, MemberType.VARIABLE);
+            } else {
+                id = scope().get(name, MemberType.VARIABLE);
+            }
+            return new VariableRef(id, VariableType.LOCAL);
+        }
+
+        @Override
+        public boolean hasVariable(String name) {
+            return scope().has(name, MemberType.VARIABLE);
+        }
+
+        @Override
+        public FunctionAddress getFunction(String name) {
+            return null;
+        }
+
+        @Override
+        public Double getConstant(String name) {
+            return null;
         }
     }
 }

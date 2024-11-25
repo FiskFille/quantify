@@ -9,8 +9,8 @@ import com.fiskmods.quantify.jvm.JvmRunnable;
 import com.fiskmods.quantify.lexer.QtfLexer;
 import com.fiskmods.quantify.lexer.token.Token;
 import com.fiskmods.quantify.library.QtfLibrary;
-import com.fiskmods.quantify.member.MemberMap;
 import com.fiskmods.quantify.member.QtfListener;
+import com.fiskmods.quantify.member.QtfMemory;
 import com.fiskmods.quantify.parser.QtfParser;
 import com.fiskmods.quantify.parser.SyntaxContext;
 import com.fiskmods.quantify.parser.SyntaxTree;
@@ -76,9 +76,9 @@ public class QtfCompiler {
             if (classLoader == null) {
                 classLoader = classLoaderFactory.get();
             }
-            MemberMap members = tree.context().compileMembers();
+            QtfMemory memory = tree.context().createMemory(listener);
             JvmRunnable runnable = JvmCompiler.compile(tree.flatten(), nameProvider.next(), classLoader);
-            return new QtfScript(runnable, members.createMemory(listener), members.getInputs());
+            return new QtfScript(runnable, memory, tree.context().getInputs());
         } catch (Exception e) {
             throw new QtfCompilerException(e);
         }

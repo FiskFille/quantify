@@ -7,8 +7,8 @@ import java.util.Map;
 
 public class StandardQtfLibrary implements QtfLibrary {
     private final String key;
-    private final Map<String, Double> constants;
     private final Map<String, FunctionAddress> functions;
+    private final Map<String, Double> constants;
 
     private StandardQtfLibrary(String key, Map<String, Double> constants, Map<String, FunctionAddress> functions) {
         this.key = key;
@@ -22,13 +22,13 @@ public class StandardQtfLibrary implements QtfLibrary {
     }
 
     @Override
-    public Double getConstant(String name) {
-        return constants.get(name);
+    public FunctionAddress getFunction(String name) {
+        return functions.get(name);
     }
 
     @Override
-    public FunctionAddress getFunction(String name) {
-        return functions.get(name);
+    public Double getConstant(String name) {
+        return constants.get(name);
     }
 
     public static Builder builder() {
@@ -36,8 +36,8 @@ public class StandardQtfLibrary implements QtfLibrary {
     }
 
     public static class Builder {
-        private final Map<String, Double> constants = new HashMap<>();
         private final Map<String, FunctionAddress> functions = new HashMap<>();
+        private final Map<String, Double> constants = new HashMap<>();
 
         public Builder addConstant(String name, double value) {
             functions.remove(name);

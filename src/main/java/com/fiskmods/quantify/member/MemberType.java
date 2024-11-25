@@ -3,8 +3,9 @@ package com.fiskmods.quantify.member;
 import java.util.Locale;
 
 public enum MemberType {
+    UNKNOWN,
+
     VARIABLE,
-    FUNCTION,
     LIBRARY,
     OUTPUT,
     OUTPUT_VARIABLE;

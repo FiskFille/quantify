@@ -12,4 +12,9 @@ public class FunctionAddress {
         this.descriptor = "(" + "D".repeat(parameters) + ")D";
         this.parameters = parameters;
     }
+
+    // TODO
+    public String getLoggingName() {
+        return owner + "::" + name + descriptor;
+    }
 }

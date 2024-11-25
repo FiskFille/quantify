@@ -1,7 +1,7 @@
 package com.fiskmods.quantify.member;
 
 import com.fiskmods.quantify.exception.QtfException;
-import com.fiskmods.quantify.library.QtfLibrary;
+import com.fiskmods.quantify.parser.element.Value;
 
 import java.util.*;
 
@@ -9,22 +9,39 @@ public class Scope {
     private final Map<String, MemberType> types = new HashMap<>();
     private final Map<MemberType, List<String>> ids = new EnumMap<>(MemberType.class);
 
-    private QtfLibrary namespace;
+    private Namespace namespace;
+    private Value lerpProgress;
 
-    public Scope copy() {
-        Scope scope = new Scope();
+    public Scope(Namespace namespace) {
+        this.namespace = namespace;
+    }
+
+    public Scope copy(Namespace namespace) {
+        Scope scope = new Scope(namespace);
+        scope.lerpProgress = lerpProgress;
         scope.types.putAll(types);
-        scope.namespace = namespace;
         ids.forEach((k, v) -> scope.ids.put(k, new ArrayList<>(v)));
         return scope;
     }
 
-    public void setNamespace(QtfLibrary namespace) {
+    public Scope copy() {
+        return copy(namespace);
+    }
+
+    public void setNamespace(Namespace namespace) {
         this.namespace = namespace;
     }
 
-    public QtfLibrary getNamespace() {
+    public Namespace getNamespace() {
         return namespace;
+    }
+
+    public void setLerpProgress(Value lerpProgress) {
+        this.lerpProgress = lerpProgress;
+    }
+
+    public Value getLerpProgress() {
+        return lerpProgress;
     }
 
     public List<String> getIdMap(MemberType type) {
@@ -34,11 +51,15 @@ public class Scope {
 
     public int put(String name, MemberType type) throws QtfException {
         if (types.put(name, type) != null) {
-            throw new QtfException("duplicate member '%s'".formatted(name));
+            throw new QtfException("Duplicate member '%s'".formatted(name));
         }
         List<String> idList = ids.computeIfAbsent(type, k -> new ArrayList<>());
         idList.add(name);
         return idList.size() - 1;
+    }
+
+    public MemberType getType(String name) {
+        return types.getOrDefault(name, MemberType.UNKNOWN);
     }
 
     public boolean has(String name, MemberType expectedType) {
@@ -58,7 +79,7 @@ public class Scope {
         int id = ids.computeIfAbsent(expectedType, k -> new ArrayList<>())
                 .indexOf(name);
         if (id == -1) {
-            throw new QtfException("Nonexistent %s id %s".formatted(expectedType, id));
+            throw new QtfException("Nonexistent %s id %d".formatted(expectedType, id));
         }
         return id;
     }

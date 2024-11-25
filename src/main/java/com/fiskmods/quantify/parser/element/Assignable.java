@@ -1,11 +1,13 @@
 package com.fiskmods.quantify.parser.element;
 
 import com.fiskmods.quantify.exception.QtfParseException;
-import com.fiskmods.quantify.jvm.VariableType;
 import com.fiskmods.quantify.lexer.token.Operator;
 import com.fiskmods.quantify.lexer.token.TokenClass;
 import com.fiskmods.quantify.member.QtfMemory;
-import com.fiskmods.quantify.parser.*;
+import com.fiskmods.quantify.parser.QtfParser;
+import com.fiskmods.quantify.parser.SyntaxContext;
+import com.fiskmods.quantify.parser.SyntaxElement;
+import com.fiskmods.quantify.parser.SyntaxParser;
 import org.objectweb.asm.MethodVisitor;
 
 import java.util.ArrayList;
@@ -16,7 +18,7 @@ interface Assignable extends SyntaxElement {
 
     void set(MethodVisitor mv, Value value, Operator op);
 
-    void lerp(MethodVisitor mv, Value value, int progressId, boolean rotational);
+    void lerp(MethodVisitor mv, Value value, Value progress, boolean rotational);
 
     record AssignableParser(boolean isDefinition) implements SyntaxParser<Assignable> {
         @Override
@@ -30,7 +32,7 @@ interface Assignable extends SyntaxElement {
                 isNegated = true;
             }
 
-            Variable var = parser.next(Variable.parser(isDefinition));
+            VariableRef var = parser.next(VariableRef.parser(isDefinition));
             if (!parser.isNext(TokenClass.COMMA)) {
                 return isNegated ? new NegatedVariable(var) : var;
             }
@@ -48,7 +50,7 @@ interface Assignable extends SyntaxElement {
                     isNegated = false;
                 }
 
-                var = parser.next(Variable.parser(isDefinition));
+                var = parser.next(VariableRef.parser(isDefinition));
                 list.add(new QtfMemory.Address(var.id(), var.type(), isNegated));
             } while (parser.isNext(TokenClass.COMMA));
 
@@ -56,7 +58,7 @@ interface Assignable extends SyntaxElement {
         }
     }
 
-    record NegatedVariable(Variable var) implements Assignable {
+    record NegatedVariable(VariableRef var) implements Assignable {
         @Override
         public void apply(MethodVisitor mv) {
             throw new UnsupportedOperationException();
@@ -73,8 +75,8 @@ interface Assignable extends SyntaxElement {
         }
 
         @Override
-        public void lerp(MethodVisitor mv, Value value, int progressId, boolean rotational) {
-            var.lerp(mv, value.negate(), progressId, rotational);
+        public void lerp(MethodVisitor mv, Value value, Value progress, boolean rotational) {
+            var.lerp(mv, value.negate(), progress, rotational);
         }
     }
 
@@ -101,8 +103,8 @@ interface Assignable extends SyntaxElement {
         }
 
         @Override
-        public void lerp(MethodVisitor mv, Value value, int progressId, boolean rotational) {
-            QtfMemory.lerp(addresses, QtfMemory.get(progressId, VariableType.LOCAL), rotational, value)
+        public void lerp(MethodVisitor mv, Value value, Value progress, boolean rotational) {
+            QtfMemory.lerp(addresses, progress, rotational, value)
                     .apply(mv);
         }
     }

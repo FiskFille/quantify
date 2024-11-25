@@ -9,11 +9,9 @@ public class QtfMemory {
     public static final int LOCAL_INDEX = 3;
 
     private final double[] output;
-    private final FunctionAddress[] functions;
 
-    public QtfMemory(double[] output, FunctionAddress[] functions) {
+    public QtfMemory(double[] output) {
         this.output = output;
-        this.functions = functions;
     }
 
     public void run(JvmRunnable runnable, double[] input) {
@@ -23,9 +21,6 @@ public class QtfMemory {
     public void print() {
         for (int i = 0; i < output.length; ++i) {
             System.out.println("V " + i + ": " + output[i]);
-        }
-        for (int i = 0; i < functions.length; ++i) {
-            System.out.println("F " + i + ": " + functions[i]);
         }
     }
 
@@ -125,34 +120,42 @@ public class QtfMemory {
         };
     }
 
-    public static JvmFunction lerp(Address var, JvmFunction lerp, boolean rotational, JvmFunction result) {
+    public static JvmFunction lerp(int id, VariableType type, JvmFunction progress, boolean rotational, JvmFunction result) {
+        if (progress instanceof NumLiteral(double value)) {
+            if (value == 0) {
+                return JvmFunction.DO_NOTHING;
+            }
+            if (value == 1) {
+                return set(id, type, result);
+            }
+        }
         final String QTF_MATH = "com/fiskmods/quantify/library/QtfMath";
         return mv -> {
             if (!rotational && result instanceof NumLiteral(double value) && value == 0) {
-                if (var.type.isExternal()) {
-                    JvmUtil.arrayModify(mv, var.type.refOffset(), var.id, ignored -> {
+                if (type.isExternal()) {
+                    JvmUtil.arrayModify(mv, type.refOffset(), id, ignored -> {
                         mv.visitInsn(DCONST_1);
-                        lerp.apply(mv);
+                        progress.apply(mv);
                         mv.visitInsn(DSUB);
                         mv.visitInsn(DMUL);
                     });
                 }
                 else {
-                    mv.visitVarInsn(DLOAD, var.id * 2 + LOCAL_INDEX);
+                    mv.visitVarInsn(DLOAD, id * 2 + LOCAL_INDEX);
                     mv.visitInsn(DCONST_1);
-                    lerp.apply(mv);
+                    progress.apply(mv);
                     mv.visitInsn(DSUB);
                     mv.visitInsn(DMUL);
-                    mv.visitVarInsn(DSTORE, var.id * 2 + LOCAL_INDEX);
+                    mv.visitVarInsn(DSTORE, id * 2 + LOCAL_INDEX);
                 }
                 return;
             }
 
-            if (var.type.isExternal()) {
-                JvmUtil.arrayModify(mv, var.type.refOffset(), var.id, ignored -> {
-                    lerp.apply(mv);
+            if (type.isExternal()) {
+                JvmUtil.arrayModify(mv, type.refOffset(), id, ignored -> {
+                    progress.apply(mv);
                     result.apply(mv);
-                    JvmUtil.arrayLoad(mv, var.type.refOffset(), var.id);
+                    JvmUtil.arrayLoad(mv, type.refOffset(), id);
                     mv.visitInsn(DSUB);
                     if (rotational) {
                         mv.visitMethodInsn(INVOKESTATIC, QTF_MATH, "wrapAngleToPi", "(D)D", false);
@@ -162,25 +165,33 @@ public class QtfMemory {
                 });
             }
             else {
-                mv.visitVarInsn(DLOAD, var.id * 2 + LOCAL_INDEX);
-                lerp.apply(mv);
+                mv.visitVarInsn(DLOAD, id * 2 + LOCAL_INDEX);
+                progress.apply(mv);
                 result.apply(mv);
-                mv.visitVarInsn(DLOAD, var.id * 2 + LOCAL_INDEX);
+                mv.visitVarInsn(DLOAD, id * 2 + LOCAL_INDEX);
                 mv.visitInsn(DSUB);
                 if (rotational) {
                     mv.visitMethodInsn(INVOKESTATIC, QTF_MATH, "wrapAngleToPi", "(D)D", false);
                 }
                 mv.visitInsn(DMUL);
                 mv.visitInsn(DADD);
-                mv.visitVarInsn(DSTORE, var.id * 2 + LOCAL_INDEX);
+                mv.visitVarInsn(DSTORE, id * 2 + LOCAL_INDEX);
             }
         };
     }
 
-    public static JvmFunction lerp(Address[] addresses, JvmFunction lerp, boolean rotational, JvmFunction result) {
+    public static JvmFunction lerp(Address[] addresses, JvmFunction progress, boolean rotational, JvmFunction result) {
+        if (progress instanceof NumLiteral(double value)) {
+            if (value == 0) {
+                return JvmFunction.DO_NOTHING;
+            }
+            if (value == 1) {
+                return set(addresses, result);
+            }
+        }
         return mv -> {
             for (Address a : addresses) {
-                lerp(a, lerp, rotational, result.negateIf(a.isNegated)).apply(mv);
+                lerp(a.id, a.type, progress, rotational, result.negateIf(a.isNegated)).apply(mv);
             }
         };
     }

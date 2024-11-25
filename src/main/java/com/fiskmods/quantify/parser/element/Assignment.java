@@ -1,12 +1,13 @@
 package com.fiskmods.quantify.parser.element;
 
-import com.fiskmods.quantify.lexer.Keywords;
 import com.fiskmods.quantify.exception.QtfParseException;
 import com.fiskmods.quantify.lexer.token.Operator;
 import com.fiskmods.quantify.lexer.token.Token;
 import com.fiskmods.quantify.lexer.token.TokenClass;
-import com.fiskmods.quantify.member.MemberType;
-import com.fiskmods.quantify.parser.*;
+import com.fiskmods.quantify.parser.QtfParser;
+import com.fiskmods.quantify.parser.SyntaxContext;
+import com.fiskmods.quantify.parser.SyntaxElement;
+import com.fiskmods.quantify.parser.SyntaxParser;
 import org.objectweb.asm.MethodVisitor;
 
 interface Assignment extends SyntaxElement {
@@ -29,7 +30,7 @@ interface Assignment extends SyntaxElement {
                 op = (Operator) assignment.value();
 
                 if ((op == Operator.LERP || op == Operator.LERP_ROT) &&
-                        !context.has(Keywords.INTERPOLATE, MemberType.VARIABLE, SyntaxContext.ScopeLevel.LOCAL)) {
+                        context.scope().getLerpProgress() == null) {
                     throw QtfParseException.error("interpolation assignments can only be used inside" +
                             " interpolate blocks", assignment);
                 }
@@ -37,8 +38,8 @@ interface Assignment extends SyntaxElement {
 
             Value value = parser.next(Expression::acceptEnclosed);
             if (op == Operator.LERP || op == Operator.LERP_ROT) {
-                int id = context.getMemberId(Keywords.INTERPOLATE, MemberType.VARIABLE, SyntaxContext.ScopeLevel.LOCAL);
-                return new LerpAssignment(target, value, id, op == Operator.LERP_ROT);
+                return new LerpAssignment(target, value, context.scope().getLerpProgress(),
+                        op == Operator.LERP_ROT);
             }
             return new AbsoluteAssignment(target, value, op);
         }
@@ -55,10 +56,10 @@ interface Assignment extends SyntaxElement {
         }
     }
 
-    record LerpAssignment(Assignable target, Value value, int progressId, boolean rotational) implements Assignment {
+    record LerpAssignment(Assignable target, Value value, Value progress, boolean rotational) implements Assignment {
         @Override
         public void apply(MethodVisitor mv) {
-            target.lerp(mv, value, progressId, rotational);
+            target.lerp(mv, value, progress, rotational);
         }
     }
 }
