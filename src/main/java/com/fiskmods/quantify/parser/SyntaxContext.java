@@ -61,8 +61,12 @@ public class SyntaxContext {
     }
 
     public void addConstant(String name, double value) throws QtfParseException {
-        addMember(name, MemberType.CONSTANT);
-        constants.add(value);
+        int id = addMember(name, MemberType.CONSTANT);
+        if (id == constants.size()) {
+            constants.add(value);
+        } else {
+            constants.set(id, value);
+        }
     }
 
     private Scope getScopeFor(MemberType type) {
