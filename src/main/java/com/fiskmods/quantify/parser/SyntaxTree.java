@@ -5,7 +5,7 @@ import com.fiskmods.quantify.jvm.JvmFunction;
 import java.util.ArrayList;
 import java.util.List;
 
-public record SyntaxTree(SyntaxContext context, List<SyntaxElement> elements) {
+public record SyntaxTree(SyntaxContext context, List<JvmFunction> elements) {
     public SyntaxTree(SyntaxContext context) {
         this(context, new ArrayList<>());
     }

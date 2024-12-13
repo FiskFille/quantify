@@ -7,12 +7,13 @@ public enum MemberType {
 
     VARIABLE,
     CONSTANT,
+    FUNCTION,
     LIBRARY,
     OUTPUT,
     OUTPUT_VARIABLE;
 
-    public boolean isGlobal() {
-        return this == VARIABLE || this == CONSTANT;
+    public boolean isLocal() {
+        return this == VARIABLE || this == CONSTANT || this == FUNCTION;
     }
 
     public String toString() {

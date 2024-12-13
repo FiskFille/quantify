@@ -20,11 +20,11 @@ public class SyntaxSelector {
             case IF -> IfStatement.PARSER;
             case INTERPOLATE -> InterpolateStatement.PARSER;
             case NAMESPACE -> NamespaceParser.INSTANCE;
+            case DEF -> DefParser.INSTANCE;
             case CONST -> ConstDefParser.INSTANCE;
 
             case IDENTIFIER -> selectIdentifierSyntax(parser, context, next);
-            case DEF -> new Assignment.AssignmentParser(true);
-            default -> new Assignment.AssignmentParser(false);
+            default -> Assignment.PARSER;
         };
     }
 
@@ -42,6 +42,6 @@ public class SyntaxSelector {
         if (context.namespace().hasFunction(name)) {
             return FunctionRef.parser(context.namespace(), false);
         }
-        return new Assignment.AssignmentParser(false);
+        return Assignment.PARSER;
     }
 }

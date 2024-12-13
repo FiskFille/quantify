@@ -53,7 +53,7 @@ public class StandardQtfLibrary implements QtfLibrary {
 
         public Builder addFunction(String owner, String name, int parameters) {
             constants.remove(name);
-            functions.put(name, new FunctionAddress(owner, name, parameters));
+            functions.put(name, FunctionAddress.create(owner, name, parameters));
             return this;
         }
 

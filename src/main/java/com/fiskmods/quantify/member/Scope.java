@@ -6,11 +6,11 @@ import com.fiskmods.quantify.parser.element.Value;
 import java.util.*;
 
 public class Scope {
-    private final Map<String, MemberType> types = new HashMap<>();
-    private final Map<MemberType, List<String>> ids = new EnumMap<>(MemberType.class);
+    protected final Map<String, MemberType> types = new HashMap<>();
+    protected final Map<MemberType, List<String>> ids = new EnumMap<>(MemberType.class);
 
-    private Namespace namespace;
-    private Value lerpProgress;
+    protected Namespace namespace;
+    protected Value lerpProgress;
 
     public Scope(Namespace namespace) {
         this.namespace = namespace;
@@ -82,5 +82,9 @@ public class Scope {
             throw new QtfException("Nonexistent %s id %d".formatted(expectedType, id));
         }
         return id;
+    }
+
+    public boolean isParameter(String name) {
+        return false;
     }
 }

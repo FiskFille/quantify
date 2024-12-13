@@ -4,6 +4,8 @@ import com.fiskmods.quantify.QtfCompiler;
 import com.fiskmods.quantify.exception.QtfException;
 import com.fiskmods.quantify.exception.QtfParseException;
 import com.fiskmods.quantify.jvm.FunctionAddress;
+import com.fiskmods.quantify.jvm.JvmClassComposer;
+import com.fiskmods.quantify.jvm.JvmFunctionDefinition;
 import com.fiskmods.quantify.jvm.VariableType;
 import com.fiskmods.quantify.library.QtfLibrary;
 import com.fiskmods.quantify.member.*;
@@ -17,9 +19,11 @@ public class SyntaxContext {
 
     private final Scope globalScope = new Scope(defaultNamespace);
     private final LinkedList<Scope> currentScope = new LinkedList<>();
-    private final List<Double> constants = new ArrayList<>();
+    private final IndexedList<Double> constants = new IndexedList<>();
+    private final IndexedList<FunctionAddress> functions = new IndexedList<>();
 
     private final Map<String, Integer> inputs = new HashMap<>();
+    private final List<JvmFunctionDefinition> functionDefinitions = new ArrayList<>();
     private final String[] libraryKeys;
 
     private final QtfCompiler compiler;
@@ -46,8 +50,12 @@ public class SyntaxContext {
         return currentScope.getLast();
     }
 
+    public void push(Scope scope) {
+        currentScope.add(scope);
+    }
+
     public void push(UnaryOperator<Scope> scope) {
-        currentScope.add(scope.apply(scope()));
+        push(scope.apply(scope()));
     }
 
     public void pop() {
@@ -62,15 +70,21 @@ public class SyntaxContext {
 
     public void addConstant(String name, double value) throws QtfParseException {
         int id = addMember(name, MemberType.CONSTANT);
-        if (id == constants.size()) {
-            constants.add(value);
-        } else {
-            constants.set(id, value);
-        }
+        constants.put(id, value);
+    }
+
+    public void addFunction(String name, FunctionAddress address) throws QtfParseException {
+        int id = addMember(name, MemberType.FUNCTION);
+        functions.put(id, address);
+    }
+
+    public int defineFunction(JvmFunctionDefinition composer) {
+        functionDefinitions.add(composer);
+        return functionDefinitions.size() - 1;
     }
 
     private Scope getScopeFor(MemberType type) {
-        return type.isGlobal() ? scope() : globalScope;
+        return type.isLocal() ? scope() : globalScope;
     }
 
     public int addMember(String name, MemberType type) throws QtfParseException {
@@ -118,6 +132,12 @@ public class SyntaxContext {
         return globalScope.getIdMap(MemberType.OUTPUT_VARIABLE);
     }
 
+    public JvmClassComposer createClassComposer(String className) {
+        return functionDefinitions.stream()
+                .map(t -> t.define(className))
+                .reduce(JvmClassComposer.DO_NOTHING, JvmClassComposer::andThen);
+    }
+
     public QtfMemory createMemory(QtfListener listener) throws QtfParseException {
         if (currentScope.size() > 1) {
             throw new QtfParseException("Unbalanced stack: " + currentScope.size());
@@ -137,7 +157,7 @@ public class SyntaxContext {
             } else {
                 id = scope().get(name, MemberType.VARIABLE);
             }
-            return new VariableRef(id, VariableType.LOCAL);
+            return new VariableRef(id, scope().isParameter(name) ? VariableType.PARAM : VariableType.LOCAL);
         }
 
         @Override
@@ -146,13 +166,14 @@ public class SyntaxContext {
         }
 
         @Override
-        public FunctionAddress getFunction(String name) {
-            return null;
+        public FunctionAddress getFunction(String name) throws QtfException {
+            int id = scope().get(name, MemberType.FUNCTION);
+            return functions.get(id);
         }
 
         @Override
         public boolean hasFunction(String name) {
-            return false;
+            return scope().has(name, MemberType.FUNCTION);
         }
 
         @Override

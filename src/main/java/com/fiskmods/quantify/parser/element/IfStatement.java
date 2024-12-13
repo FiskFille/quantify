@@ -1,17 +1,17 @@
 package com.fiskmods.quantify.parser.element;
 
 import com.fiskmods.quantify.exception.QtfParseException;
+import com.fiskmods.quantify.jvm.JvmFunction;
 import com.fiskmods.quantify.lexer.token.TokenClass;
 import com.fiskmods.quantify.parser.QtfParser;
 import com.fiskmods.quantify.parser.SyntaxContext;
-import com.fiskmods.quantify.parser.SyntaxElement;
 import com.fiskmods.quantify.parser.SyntaxParser;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 
 import static org.objectweb.asm.Opcodes.*;
 
-record IfStatement(Value condition, SyntaxElement body, SyntaxElement elseBody) implements SyntaxElement {
+record IfStatement(Value condition, JvmFunction body, JvmFunction elseBody) implements JvmFunction {
     public static final SyntaxParser<IfStatement> PARSER = new IfStatementParser();
 
     @Override
@@ -52,7 +52,7 @@ record IfStatement(Value condition, SyntaxElement body, SyntaxElement elseBody) 
             parser.skip(TokenClass.TERMINATOR);
 
             StatementBody body = parser.next(StatementBody.PARSER);
-            SyntaxElement elseBody = null;
+            JvmFunction elseBody = null;
             parser.skip(TokenClass.TERMINATOR);
 
             if (parser.isNext(TokenClass.ELSE)) {

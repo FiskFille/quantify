@@ -1,6 +1,7 @@
 package com.fiskmods.quantify.parser.element;
 
 import com.fiskmods.quantify.exception.QtfParseException;
+import com.fiskmods.quantify.jvm.JvmFunction;
 import com.fiskmods.quantify.jvm.VariableType;
 import com.fiskmods.quantify.lexer.Keywords;
 import com.fiskmods.quantify.lexer.token.TokenClass;
@@ -8,11 +9,10 @@ import com.fiskmods.quantify.member.MemberType;
 import com.fiskmods.quantify.member.Scope;
 import com.fiskmods.quantify.parser.QtfParser;
 import com.fiskmods.quantify.parser.SyntaxContext;
-import com.fiskmods.quantify.parser.SyntaxElement;
 import com.fiskmods.quantify.parser.SyntaxParser;
 import org.objectweb.asm.MethodVisitor;
 
-record InterpolateStatement(Value progress, VariableRef substitution, SyntaxElement body) implements SyntaxElement {
+record InterpolateStatement(Value progress, VariableRef substitution, JvmFunction body) implements JvmFunction {
     public static final SyntaxParser<InterpolateStatement> PARSER = new InterpolateStatementParser();
 
     @Override
@@ -21,7 +21,7 @@ record InterpolateStatement(Value progress, VariableRef substitution, SyntaxElem
             return;
         }
         if (substitution != null) {
-            substitution.set(mv, progress, null);
+            substitution.modify(mv, progress, null);
         }
         body.apply(mv);
     }

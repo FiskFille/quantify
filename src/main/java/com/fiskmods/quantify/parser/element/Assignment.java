@@ -1,21 +1,24 @@
 package com.fiskmods.quantify.parser.element;
 
 import com.fiskmods.quantify.exception.QtfParseException;
+import com.fiskmods.quantify.jvm.JvmFunction;
 import com.fiskmods.quantify.lexer.token.Operator;
 import com.fiskmods.quantify.lexer.token.Token;
 import com.fiskmods.quantify.lexer.token.TokenClass;
 import com.fiskmods.quantify.parser.QtfParser;
 import com.fiskmods.quantify.parser.SyntaxContext;
-import com.fiskmods.quantify.parser.SyntaxElement;
 import com.fiskmods.quantify.parser.SyntaxParser;
 import org.objectweb.asm.MethodVisitor;
 
-interface Assignment extends SyntaxElement {
-    record AssignmentParser(boolean isDefinition) implements SyntaxParser<Assignment> {
+interface Assignment extends JvmFunction {
+    SyntaxParser<Assignment> PARSER = (parser, context) -> {
+        Assignable target = parser.next(Assignable.PARSER);
+        return parser.next(new AssignmentParser(target, false));
+    };
+
+    record AssignmentParser(Assignable target, boolean isDefinition) implements SyntaxParser<Assignment> {
         @Override
         public Assignment accept(QtfParser parser, SyntaxContext context) throws QtfParseException {
-            Assignable target = parser.next(new Assignable.AssignableParser(isDefinition));
-
             // Empty definition
             if (!parser.hasNext(QtfParser.Boundary.LINE)) {
                 return new AbsoluteAssignment(target, null, null);
@@ -50,8 +53,10 @@ interface Assignment extends SyntaxElement {
         public void apply(MethodVisitor mv) {
             if (value == null) {
                 target.init(mv);
+            } else if (op != null) {
+                target.modify(mv, value, op);
             } else {
-                target.set(mv, value, op);
+                target.set(mv, value);
             }
         }
     }

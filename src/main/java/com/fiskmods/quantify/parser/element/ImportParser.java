@@ -1,14 +1,17 @@
 package com.fiskmods.quantify.parser.element;
 
 import com.fiskmods.quantify.exception.QtfParseException;
+import com.fiskmods.quantify.jvm.JvmFunction;
 import com.fiskmods.quantify.lexer.token.TokenClass;
-import com.fiskmods.quantify.parser.*;
+import com.fiskmods.quantify.parser.QtfParser;
+import com.fiskmods.quantify.parser.SyntaxContext;
+import com.fiskmods.quantify.parser.SyntaxParser;
 
-class ImportParser implements SyntaxParser<SyntaxElement> {
+class ImportParser implements SyntaxParser<JvmFunction> {
     public static final ImportParser INSTANCE = new ImportParser();
 
     @Override
-    public SyntaxElement accept(QtfParser parser, SyntaxContext context) throws QtfParseException {
+    public JvmFunction accept(QtfParser parser, SyntaxContext context) throws QtfParseException {
         parser.clearPeekedToken();
         String key = parser.next(TokenClass.STR_LITERAL).getString();
         parser.next(TokenClass.COLON);

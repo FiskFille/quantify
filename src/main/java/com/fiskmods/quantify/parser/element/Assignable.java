@@ -1,44 +1,51 @@
 package com.fiskmods.quantify.parser.element;
 
 import com.fiskmods.quantify.exception.QtfParseException;
+import com.fiskmods.quantify.jvm.JvmFunction;
+import com.fiskmods.quantify.jvm.JvmUtil;
+import com.fiskmods.quantify.jvm.VarAddress;
 import com.fiskmods.quantify.lexer.token.Operator;
 import com.fiskmods.quantify.lexer.token.TokenClass;
-import com.fiskmods.quantify.member.QtfMemory;
 import com.fiskmods.quantify.parser.QtfParser;
 import com.fiskmods.quantify.parser.SyntaxContext;
-import com.fiskmods.quantify.parser.SyntaxElement;
 import com.fiskmods.quantify.parser.SyntaxParser;
 import org.objectweb.asm.MethodVisitor;
 
 import java.util.ArrayList;
 import java.util.List;
 
-interface Assignable extends SyntaxElement {
-    void init(MethodVisitor mv);
+public interface Assignable extends JvmFunction {
+    void set(MethodVisitor mv, Value value);
 
-    void set(MethodVisitor mv, Value value, Operator op);
+    default void init(MethodVisitor mv) {
+        set(mv, Value.ZERO);
+    }
+
+    void modify(MethodVisitor mv, Value value, Operator op);
 
     void lerp(MethodVisitor mv, Value value, Value progress, boolean rotational);
 
-    record AssignableParser(boolean isDefinition) implements SyntaxParser<Assignable> {
+    SyntaxParser<Assignable> PARSER = (parser, context) -> {
+        String name = parser.next(TokenClass.IDENTIFIER).getString();
+        if (parser.isNext(TokenClass.OPERATOR, Operator.SUB)) {
+            parser.clearPeekedToken();
+            return parser.next(new AssignableParser(name, true, false));
+        }
+        return parser.next(new AssignableParser(name, false, false));
+    };
+
+    record AssignableParser(String name, boolean isNegated, boolean isDefinition) implements SyntaxParser<Assignable> {
         @Override
         public Assignable accept(QtfParser parser, SyntaxContext context) throws QtfParseException {
-            boolean isNegated = false;
-
-            if (isDefinition) {
-                parser.next(TokenClass.DEF);
-            } else if (parser.isNext(TokenClass.OPERATOR, Operator.SUB)) {
-                parser.clearPeekedToken();
-                isNegated = true;
-            }
-
-            VariableRef var = parser.next(VariableRef.parser(isDefinition));
+            VariableRef var = parser.next(VariableRef.parser(name, isDefinition));
             if (!parser.isNext(TokenClass.COMMA)) {
                 return isNegated ? new NegatedVariable(var) : var;
             }
 
-            List<QtfMemory.Address> list = new ArrayList<>();
-            list.add(new QtfMemory.Address(var.id(), var.type(), isNegated));
+            List<VarAddress> list = new ArrayList<>();
+            list.add(VarAddress.create(var.type(), var.id(), isNegated));
+            boolean isNegated;
+
             do {
                 parser.clearPeekedToken();
 
@@ -51,10 +58,10 @@ interface Assignable extends SyntaxElement {
                 }
 
                 var = parser.next(VariableRef.parser(isDefinition));
-                list.add(new QtfMemory.Address(var.id(), var.type(), isNegated));
+                list.add(VarAddress.create(var.type(), var.id(), isNegated));
             } while (parser.isNext(TokenClass.COMMA));
 
-            return new VariableList(list.toArray(new QtfMemory.Address[0]));
+            return new VariableList(list.toArray(new VarAddress[0]));
         }
     }
 
@@ -65,13 +72,13 @@ interface Assignable extends SyntaxElement {
         }
 
         @Override
-        public void init(MethodVisitor mv) {
-            var.init(mv);
+        public void set(MethodVisitor mv, Value value) {
+            var.set(mv, value.negate());
         }
 
         @Override
-        public void set(MethodVisitor mv, Value value, Operator op) {
-            var.set(mv, value.negate(), op);
+        public void modify(MethodVisitor mv, Value value, Operator op) {
+            var.modify(mv, value.negate(), op);
         }
 
         @Override
@@ -80,32 +87,32 @@ interface Assignable extends SyntaxElement {
         }
     }
 
-    record VariableList(QtfMemory.Address[] addresses) implements Assignable {
+    record VariableList(VarAddress[] addresses) implements Assignable {
         @Override
         public void apply(MethodVisitor mv) {
             throw new UnsupportedOperationException();
         }
 
         @Override
+        public void set(MethodVisitor mv, Value value) {
+            JvmUtil.set(mv, addresses, value);
+        }
+
+        @Override
         public void init(MethodVisitor mv) {
-            for (QtfMemory.Address address : addresses) {
-                QtfMemory.init(address.id()).apply(mv);
+            for (VarAddress address : addresses) {
+                address.init(mv);
             }
         }
 
         @Override
-        public void set(MethodVisitor mv, Value value, Operator op) {
-            if (op != null) {
-                QtfMemory.set(addresses, value, op).apply(mv);
-            } else {
-                QtfMemory.set(addresses, value).apply(mv);
-            }
+        public void modify(MethodVisitor mv, Value value, Operator op) {
+            JvmUtil.modify(mv, addresses, value, op);
         }
 
         @Override
         public void lerp(MethodVisitor mv, Value value, Value progress, boolean rotational) {
-            QtfMemory.lerp(addresses, progress, rotational, value)
-                    .apply(mv);
+            JvmUtil.lerp(mv, addresses, progress, rotational, value);
         }
     }
 }

@@ -7,8 +7,6 @@ import static org.objectweb.asm.Opcodes.*;
 
 @FunctionalInterface
 public interface JvmFunction {
-    JvmFunction DO_NOTHING = mv -> { };
-
     JvmFunction _ADD = insn(DADD);
     JvmFunction _SUB = insn(DSUB);
     JvmFunction _MUL = insn(DMUL);

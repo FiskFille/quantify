@@ -1,11 +1,14 @@
 package com.fiskmods.quantify.parser;
 
 import com.fiskmods.quantify.exception.QtfParseException;
+import com.fiskmods.quantify.jvm.JvmFunction;
 import com.fiskmods.quantify.lexer.token.Token;
 import com.fiskmods.quantify.lexer.token.TokenClass;
 import com.fiskmods.quantify.parser.element.SyntaxSelector;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 
 public class QtfParser {
@@ -30,7 +33,7 @@ public class QtfParser {
             }
 
             SyntaxParser<?> syntax = SyntaxSelector.selectSyntax(this, context, peek());
-            SyntaxElement element = next(syntax);
+            JvmFunction element = next(syntax);
             if (element != null) {
                 syntaxTree.elements().add(element);
             }
@@ -170,8 +173,23 @@ public class QtfParser {
         return flag;
     }
 
-    public <T extends SyntaxElement> T next(SyntaxParser<T> syntaxParser) throws QtfParseException {
+    public <T extends JvmFunction> T next(SyntaxParser<T> syntaxParser) throws QtfParseException {
         return syntaxParser.accept(this, context);
+    }
+
+    public <T extends JvmFunction> List<T> nextSequence(SyntaxParser<T> syntaxParser, TokenClass delimiter)
+            throws QtfParseException {
+        List<T> list = new ArrayList<>();
+        while (true) {
+            list.add(next(syntaxParser));
+
+            if (isNext(delimiter)) {
+                clearPeekedToken();
+                continue;
+            }
+            break;
+        }
+        return list;
     }
 
     public enum Boundary {

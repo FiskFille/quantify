@@ -4,6 +4,7 @@ import com.fiskmods.quantify.exception.QtfCompilerException;
 import com.fiskmods.quantify.exception.QtfLexerException;
 import com.fiskmods.quantify.exception.QtfParseException;
 import com.fiskmods.quantify.jvm.DynamicClassLoader;
+import com.fiskmods.quantify.jvm.JvmClassComposer;
 import com.fiskmods.quantify.jvm.JvmCompiler;
 import com.fiskmods.quantify.jvm.JvmRunnable;
 import com.fiskmods.quantify.lexer.QtfLexer;
@@ -25,7 +26,7 @@ import java.util.function.Supplier;
 public class QtfCompiler {
     public static final boolean DEBUG = Boolean.parseBoolean(System.getProperty("com.fiskmods.quantify.Debug", "false"));
 
-    private final NameProvider nameProvider = new NameProvider("com.fiskmods.quantify.dynamic.Compiled");
+    private final NameProvider nameProvider = new NameProvider("com/fiskmods/quantify/dynamic/Compiled");
     private final Map<String, QtfLibrary> libraries = new HashMap<>();
 
     private final Supplier<DynamicClassLoader> classLoaderFactory;
@@ -79,8 +80,10 @@ public class QtfCompiler {
             if (classLoader == null) {
                 classLoader = classLoaderFactory.get();
             }
+            String className = nameProvider.next();
             QtfMemory memory = tree.context().createMemory(listener);
-            JvmRunnable runnable = JvmCompiler.compile(tree.flatten(), nameProvider.next(), classLoader);
+            JvmClassComposer composer = tree.context().createClassComposer(className);
+            JvmRunnable runnable = JvmCompiler.compile(tree.flatten(), composer, className, classLoader);
             return new QtfScript(runnable, memory, tree.context().getInputs());
         } catch (Exception e) {
             throw new QtfCompilerException(e);

@@ -1,19 +1,19 @@
 package com.fiskmods.quantify.parser.element;
 
 import com.fiskmods.quantify.exception.QtfParseException;
+import com.fiskmods.quantify.jvm.JvmFunction;
 import com.fiskmods.quantify.lexer.Keywords;
 import com.fiskmods.quantify.lexer.token.TokenClass;
 import com.fiskmods.quantify.member.Namespace;
 import com.fiskmods.quantify.parser.QtfParser;
 import com.fiskmods.quantify.parser.SyntaxContext;
-import com.fiskmods.quantify.parser.SyntaxElement;
 import com.fiskmods.quantify.parser.SyntaxParser;
 
-class NamespaceParser implements SyntaxParser<SyntaxElement> {
-    public static final SyntaxParser<SyntaxElement> INSTANCE = new NamespaceParser();
+class NamespaceParser implements SyntaxParser<JvmFunction> {
+    public static final SyntaxParser<JvmFunction> INSTANCE = new NamespaceParser();
 
     @Override
-    public SyntaxElement accept(QtfParser parser, SyntaxContext context) throws QtfParseException {
+    public JvmFunction accept(QtfParser parser, SyntaxContext context) throws QtfParseException {
         parser.next(TokenClass.NAMESPACE);
         String namespaceName = parser.next(TokenClass.IDENTIFIER).getString();
         Namespace namespace;

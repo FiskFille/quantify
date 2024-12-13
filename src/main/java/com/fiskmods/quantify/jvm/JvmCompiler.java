@@ -14,18 +14,19 @@ import static org.objectweb.asm.Opcodes.*;
 public class JvmCompiler {
     private static final String RUNNABLE_SCRIPT = "com/fiskmods/quantify/jvm/JvmRunnable";
 
-    public static ClassWriter compile(JvmFunction function, String name) {
+    public static ClassWriter compile(JvmFunction function, JvmClassComposer classComposer, String className) {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
         MethodVisitor mv;
-        cw.visit(61, ACC_PUBLIC + ACC_SUPER, name, null, "java/lang/Object",
+        cw.visit(61, ACC_PUBLIC + ACC_SUPER, className, null, "java/lang/Object",
                 new String[] {RUNNABLE_SCRIPT});
-        cw.visitSource(name + ".java", null);
+        cw.visitSource(className + ".java", null);
         mv = cw.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
         mv.visitVarInsn(ALOAD, 0);
         mv.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
         mv.visitInsn(RETURN);
         mv.visitMaxs(1, 1);
         mv.visitEnd();
+        classComposer.compose(cw);
         mv = cw.visitMethod(ACC_PUBLIC, "run", "([D[D)V", null, null);
         function.apply(mv);
         mv.visitInsn(RETURN);
@@ -35,13 +36,15 @@ public class JvmCompiler {
         return cw;
     }
 
-    public static JvmRunnable compile(JvmFunction function, String name, DynamicClassLoader classLoader)
+    public static JvmRunnable compile(JvmFunction function, JvmClassComposer classComposer,
+                                      String className, DynamicClassLoader classLoader)
             throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        byte[] b = compile(function, name.replace('.', '/')).toByteArray();
+        byte[] b = compile(function, classComposer, className).toByteArray();
+        className = className.replace('/', '.');
         if (QtfCompiler.DEBUG) {
-            writeClassFile(name, b);
+            writeClassFile(className, b);
         }
-        Class<?> c = classLoader.defineClass(name, b);
+        Class<?> c = classLoader.defineClass(className, b);
         return (JvmRunnable) c.getConstructor().newInstance();
     }
 

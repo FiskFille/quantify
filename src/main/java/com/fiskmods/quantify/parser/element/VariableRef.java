@@ -2,38 +2,17 @@ package com.fiskmods.quantify.parser.element;
 
 import com.fiskmods.quantify.exception.QtfException;
 import com.fiskmods.quantify.exception.QtfParseException;
+import com.fiskmods.quantify.jvm.VarAddress;
 import com.fiskmods.quantify.jvm.VariableType;
-import com.fiskmods.quantify.lexer.token.Operator;
 import com.fiskmods.quantify.lexer.token.TokenClass;
 import com.fiskmods.quantify.member.MemberType;
-import com.fiskmods.quantify.member.QtfMemory;
 import com.fiskmods.quantify.parser.QtfParser;
 import com.fiskmods.quantify.parser.SyntaxParser;
-import org.objectweb.asm.MethodVisitor;
 
-public record VariableRef(int id, VariableType type) implements Value, Assignable {
+public record VariableRef(int id, VariableType type) implements Value, VarAddress {
     @Override
-    public void apply(MethodVisitor mv) {
-        QtfMemory.get(id, type).apply(mv);
-    }
-
-    @Override
-    public void init(MethodVisitor mv) {
-        QtfMemory.init(id).apply(mv);
-    }
-
-    @Override
-    public void set(MethodVisitor mv, Value value, Operator op) {
-        if (op != null) {
-            QtfMemory.set(id, type, value, op).apply(mv);
-        } else {
-            QtfMemory.set(id, type, value).apply(mv);
-        }
-    }
-
-    @Override
-    public void lerp(MethodVisitor mv, Value value, Value progress, boolean rotational) {
-        QtfMemory.lerp(id, type, progress, rotational, value).apply(mv);
+    public boolean isNegated() {
+        return false;
     }
 
     public static SyntaxParser<VariableRef> parser(boolean isDefinition) {
