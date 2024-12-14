@@ -20,6 +20,7 @@ public enum TokenClass {
     NAMESPACE,
     DEF,
     CONST,
+    RETURN,
 
     // Symbols
     DOT,

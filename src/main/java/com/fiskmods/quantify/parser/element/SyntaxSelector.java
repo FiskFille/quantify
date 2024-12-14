@@ -14,18 +14,28 @@ public class SyntaxSelector {
     public static SyntaxParser<?> selectSyntax(QtfParser parser, SyntaxContext context, Token next)
             throws QtfParseException {
         return switch (next.type()) {
-            case IMPORT -> ImportParser.INSTANCE;
-            case INPUT -> InputParser.INSTANCE;
-            case OUTPUT -> OutputParser.INSTANCE;
+            case IMPORT -> checkScope(ImportParser.INSTANCE, context, next);
+            case INPUT -> checkScope(InputParser.INSTANCE, context, next);
+            case OUTPUT -> checkScope(OutputParser.INSTANCE, context, next);
             case IF -> IfStatement.PARSER;
             case INTERPOLATE -> InterpolateStatement.PARSER;
             case NAMESPACE -> NamespaceParser.INSTANCE;
             case DEF -> DefParser.INSTANCE;
             case CONST -> ConstDefParser.INSTANCE;
+            case RETURN -> Return.INSTANCE;
 
             case IDENTIFIER -> selectIdentifierSyntax(parser, context, next);
             default -> Assignment.PARSER;
         };
+    }
+
+    private static SyntaxParser<?> checkScope(SyntaxParser<?> syntaxParser, SyntaxContext context, Token next)
+            throws QtfParseException {
+        if (context.scope().isInnerScope()) {
+            throw new QtfParseException("Illegal token '" + next + "'",
+                    "unavailable in inner scopes", next);
+        }
+        return syntaxParser;
     }
 
     private static SyntaxParser<?> selectIdentifierSyntax(QtfParser parser, SyntaxContext context, Token next)

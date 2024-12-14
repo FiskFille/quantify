@@ -8,7 +8,6 @@ import com.fiskmods.quantify.jvm.JvmFunctionDefinition;
 import com.fiskmods.quantify.lexer.token.Token;
 import com.fiskmods.quantify.lexer.token.TokenClass;
 import com.fiskmods.quantify.member.FunctionScope;
-import com.fiskmods.quantify.member.Scope;
 import com.fiskmods.quantify.parser.QtfParser;
 import com.fiskmods.quantify.parser.SyntaxContext;
 import com.fiskmods.quantify.parser.SyntaxParser;
@@ -19,15 +18,21 @@ import java.util.Set;
 
 import static org.objectweb.asm.Opcodes.*;
 
-record FunctionDef(DefinedFunctionAddress address, Value expression)
+record FunctionDef(DefinedFunctionAddress address, JvmFunction body, ReturnValueType returnValue)
         implements JvmFunctionDefinition {
     @Override
     public JvmClassComposer define(String className) {
         address.owner = className;
         return cw -> {
             MethodVisitor mv = cw.visitMethod(ACC_STATIC | ACC_PRIVATE, address.name, address.descriptor, null, null);
-            expression.apply(mv);
-            mv.visitInsn(DRETURN);
+            body.apply(mv);
+
+            if (returnValue == ReturnValueType.MISSING) {
+                mv.visitInsn(DCONST_0);
+                mv.visitInsn(DRETURN);
+            } else if (returnValue == ReturnValueType.IMPLICIT) {
+                mv.visitInsn(DRETURN);
+            }
             mv.visitMaxs(0, 0);
             mv.visitEnd();
         };
@@ -41,32 +46,29 @@ record FunctionDef(DefinedFunctionAddress address, Value expression)
 
             parser.next(TokenClass.OPEN_PARENTHESIS);
             String[] parameters = parseParameters(parser);
-            Scope scope = FunctionScope.create(context, parameters);
+            FunctionScope scope = FunctionScope.create(context, parameters);
+            JvmFunction body;
+            ReturnValueType returnValue;
+
             address.descriptor = FunctionAddress.descriptor(parameters.length);
             address.parameters = parameters.length;
-
-            boolean needsClosingBrace = false;
 
             if (parser.isNext(TokenClass.ASSIGNMENT)) {
                 Token assignment = parser.next(TokenClass.ASSIGNMENT);
                 if (assignment.value() != null) {
                     throw QtfParseException.error("function definitions can't use assignment operators", assignment);
                 }
+
+                context.push(scope);
+                body = parser.next(ExpressionParser.INSTANCE);
+                returnValue = ReturnValueType.IMPLICIT;
+                context.pop();
             } else {
-                parser.skip(TokenClass.TERMINATOR);
-                parser.next(TokenClass.OPEN_BRACES);
-                parser.skip(TokenClass.TERMINATOR);
-                needsClosingBrace = true;
+                body = parser.next(new FunctionBody.FunctionBodyParser(scope));
+                returnValue = scope.hasReturnValue() ? ReturnValueType.EXPLICIT : ReturnValueType.MISSING;
             }
 
-            context.push(scope);
-            Value expression = parser.next(ExpressionParser.INSTANCE);
-            context.pop();
-
-            if (needsClosingBrace) {
-                parser.next(TokenClass.CLOSE_BRACES);
-            }
-            int index = context.defineFunction(new FunctionDef(address, expression));
+            int index = context.defineFunction(new FunctionDef(address, body, returnValue));
             address.name = "f" + index + "_" + name;
             return null;
         }
@@ -95,6 +97,10 @@ record FunctionDef(DefinedFunctionAddress address, Value expression)
             parser.next(TokenClass.CLOSE_PARENTHESIS);
             return set.toArray(new String[0]);
         }
+    }
+
+    enum ReturnValueType {
+        MISSING, IMPLICIT, EXPLICIT
     }
 
     private static class DefinedFunctionAddress implements FunctionAddress {

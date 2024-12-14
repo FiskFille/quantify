@@ -17,7 +17,7 @@ import java.util.function.UnaryOperator;
 public class SyntaxContext {
     private final Namespace defaultNamespace = new DefaultNamespace();
 
-    private final Scope globalScope = new Scope(defaultNamespace);
+    private final Scope globalScope = new Scope(defaultNamespace, 0);
     private final LinkedList<Scope> currentScope = new LinkedList<>();
     private final IndexedList<Double> constants = new IndexedList<>();
     private final IndexedList<FunctionAddress> functions = new IndexedList<>();

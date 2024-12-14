@@ -12,12 +12,15 @@ public class Scope {
     protected Namespace namespace;
     protected Value lerpProgress;
 
-    public Scope(Namespace namespace) {
+    protected final int level;
+
+    public Scope(Namespace namespace, int level) {
         this.namespace = namespace;
+        this.level = level;
     }
 
     public Scope copy(Namespace namespace) {
-        Scope scope = new Scope(namespace);
+        Scope scope = new Scope(namespace, level + 1);
         scope.lerpProgress = lerpProgress;
         scope.types.putAll(types);
         ids.forEach((k, v) -> scope.ids.put(k, new ArrayList<>(v)));
@@ -42,6 +45,18 @@ public class Scope {
 
     public Value getLerpProgress() {
         return lerpProgress;
+    }
+
+    public int level() {
+        return level;
+    }
+
+    public boolean isParameter(String name) {
+        return false;
+    }
+
+    public boolean isInnerScope() {
+        return level > 0;
     }
 
     public List<String> getIdMap(MemberType type) {
@@ -82,9 +97,5 @@ public class Scope {
             throw new QtfException("Nonexistent %s id %d".formatted(expectedType, id));
         }
         return id;
-    }
-
-    public boolean isParameter(String name) {
-        return false;
     }
 }

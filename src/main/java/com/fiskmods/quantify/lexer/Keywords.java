@@ -11,4 +11,5 @@ public interface Keywords {
     String ELSE = "else";
     String INTERPOLATE = "interpolate";
     String NAMESPACE = "namespace";
+    String RETURN = "return";
 }

@@ -131,6 +131,7 @@ public class QtfLexer {
                         case Keywords.ELSE -> tokens.accept(scanner.newToken(ELSE));
                         case Keywords.INTERPOLATE -> tokens.accept(scanner.newToken(INTERPOLATE));
                         case Keywords.NAMESPACE -> tokens.accept(scanner.newToken(NAMESPACE));
+                        case Keywords.RETURN -> tokens.accept(scanner.newToken(RETURN));
 
                         // Constants
                         case "pi" -> tokens.accept(scanner.newToken(NUM_LITERAL, Math.PI));
