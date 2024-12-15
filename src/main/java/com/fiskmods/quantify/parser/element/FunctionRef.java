@@ -14,11 +14,11 @@ import org.objectweb.asm.Opcodes;
 import java.util.List;
 
 record FunctionRef(FunctionAddress address, Value[] args, boolean hasResult) implements Value {
-    public static SyntaxParser<FunctionRef> parser(FunctionAddress func, boolean hasResult) {
+    static SyntaxParser<FunctionRef> parser(FunctionAddress func, boolean hasResult) {
         return new FunctionRefParser(func, hasResult);
     }
 
-    public static SyntaxParser<FunctionRef> parser(Namespace namespace, boolean hasResult) {
+    static SyntaxParser<FunctionRef> parser(Namespace namespace, boolean hasResult) {
         return (parser, context) -> {
             try {
                 String name = parser.next(TokenClass.IDENTIFIER).getString();

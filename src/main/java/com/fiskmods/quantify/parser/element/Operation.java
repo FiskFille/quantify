@@ -11,7 +11,7 @@ record Operation(Value left, Value right, Operator op) implements Value {
         op.apply(mv);
     }
 
-    public static Value wrap(Value left, Value right, Operator op) {
+    static Value wrap(Value left, Value right, Operator op) {
         switch (op) {
             case MUL, AND -> {
                 // Any multiplication where one term is 0 or 1 is redundant

@@ -13,17 +13,13 @@ public interface VarAddress extends Assignable {
     int id();
     boolean isNegated();
 
-    default int localIndex() {
-        return type().localIndex(id());
-    }
-
     @Override
     default void apply(MethodVisitor mv) {
         if (type().isExternal()) {
             JvmUtil.arrayLoad(mv, type().refOffset(), id());
             return;
         }
-        mv.visitVarInsn(DLOAD, localIndex());
+        mv.visitVarInsn(DLOAD, id());
     }
 
     @Override
@@ -32,11 +28,10 @@ public interface VarAddress extends Assignable {
             JvmUtil.arrayModify(mv, type().refOffset(), id(), value.andThen(operator));
             return;
         }
-        int index = localIndex();
-        mv.visitVarInsn(DLOAD, index);
+        mv.visitVarInsn(DLOAD, id());
         value.apply(mv);
         operator.apply(mv);
-        mv.visitVarInsn(DSTORE, index);
+        mv.visitVarInsn(DSTORE, id());
     }
 
     @Override
@@ -46,7 +41,7 @@ public interface VarAddress extends Assignable {
             return;
         }
         value.apply(mv);
-        mv.visitVarInsn(DSTORE, localIndex());
+        mv.visitVarInsn(DSTORE, id());
     }
 
     @Override
@@ -73,13 +68,12 @@ public interface VarAddress extends Assignable {
                 });
             }
             else {
-                int index = localIndex();
-                mv.visitVarInsn(DLOAD, index);
+                mv.visitVarInsn(DLOAD, id());
                 mv.visitInsn(DCONST_1);
                 progress.apply(mv);
                 mv.visitInsn(DSUB);
                 mv.visitInsn(DMUL);
-                mv.visitVarInsn(DSTORE, index);
+                mv.visitVarInsn(DSTORE, id());
             }
             return;
         }
@@ -98,18 +92,17 @@ public interface VarAddress extends Assignable {
             });
         }
         else {
-            int index = localIndex();
-            mv.visitVarInsn(DLOAD, index);
+            mv.visitVarInsn(DLOAD, id());
             progress.apply(mv);
             value.apply(mv);
-            mv.visitVarInsn(DLOAD, index);
+            mv.visitVarInsn(DLOAD, id());
             mv.visitInsn(DSUB);
             if (rotational) {
                 mv.visitMethodInsn(INVOKESTATIC, QTF_MATH, "wrapAngleToPi", "(D)D", false);
             }
             mv.visitInsn(DMUL);
             mv.visitInsn(DADD);
-            mv.visitVarInsn(DSTORE, index);
+            mv.visitVarInsn(DSTORE, id());
         }
     }
 

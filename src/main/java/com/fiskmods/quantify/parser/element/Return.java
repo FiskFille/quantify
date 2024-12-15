@@ -9,7 +9,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 record Return(Value value) implements Value {
-    public static final ReturnParser INSTANCE = new ReturnParser();
+    static final ReturnParser INSTANCE = new ReturnParser();
 
     @Override
     public void apply(MethodVisitor mv) {

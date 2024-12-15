@@ -5,12 +5,13 @@ import com.fiskmods.quantify.jvm.JvmFunction;
 import com.fiskmods.quantify.lexer.token.Operator;
 import com.fiskmods.quantify.lexer.token.Token;
 import com.fiskmods.quantify.lexer.token.TokenClass;
+import com.fiskmods.quantify.member.MemberType;
 import com.fiskmods.quantify.parser.QtfParser;
 import com.fiskmods.quantify.parser.SyntaxContext;
 import com.fiskmods.quantify.parser.SyntaxParser;
 
 class ConstDefParser implements SyntaxParser<JvmFunction> {
-    public static final ConstDefParser INSTANCE = new ConstDefParser();
+    static final ConstDefParser INSTANCE = new ConstDefParser();
 
     @Override
     public JvmFunction accept(QtfParser parser, SyntaxContext context) throws QtfParseException {
@@ -23,7 +24,7 @@ class ConstDefParser implements SyntaxParser<JvmFunction> {
         }
         Value value = parser.next(ExpressionParser.INSTANCE);
         if (value instanceof NumLiteral(double v)) {
-            context.addConstant(name, v);
+            context.addMember(name, MemberType.CONSTANT, v);
             return null;
         }
         throw QtfParseException.error("constants can't be assigned to variables or functions", assignment);

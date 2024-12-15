@@ -12,25 +12,21 @@ import com.fiskmods.quantify.member.*;
 import com.fiskmods.quantify.parser.element.VariableRef;
 
 import java.util.*;
-import java.util.function.UnaryOperator;
 
-public class SyntaxContext {
+public class SyntaxContext implements ScopeProvider {
     private final Namespace defaultNamespace = new DefaultNamespace();
 
     private final Scope globalScope = new Scope(defaultNamespace, 0);
     private final LinkedList<Scope> currentScope = new LinkedList<>();
-    private final IndexedList<Double> constants = new IndexedList<>();
-    private final IndexedList<FunctionAddress> functions = new IndexedList<>();
 
     private final Map<String, Integer> inputs = new HashMap<>();
+    private final List<String> outputs = new ArrayList<>();
     private final List<JvmFunctionDefinition> functionDefinitions = new ArrayList<>();
-    private final String[] libraryKeys;
 
     private final QtfCompiler compiler;
 
     public SyntaxContext(QtfCompiler compiler) {
         this.compiler = compiler;
-        libraryKeys = new String[compiler.libraries()];
         currentScope.add(globalScope);
     }
 
@@ -42,40 +38,56 @@ public class SyntaxContext {
         return defaultNamespace;
     }
 
-    public MemberType typeOf(String name) {
-        return scope().getType(name);
-    }
-
+    @Override
     public Scope scope() {
         return currentScope.getLast();
     }
 
+    @Override
+    public Scope global() {
+        return globalScope;
+    }
+
+    @Override
     public void push(Scope scope) {
         currentScope.add(scope);
     }
 
-    public void push(UnaryOperator<Scope> scope) {
-        push(scope.apply(scope()));
-    }
-
+    @Override
     public void pop() {
         if (currentScope.size() > 1) {
             currentScope.removeLast();
         }
     }
 
-    public void addInput(String name, int index) {
-        inputs.put(name, index);
+    public void addLibrary(String name, String key) throws QtfParseException {
+        QtfLibrary library = compiler.getLibrary(key);
+        if (library == null) {
+            throw new QtfParseException("Unknown library '%s'".formatted(key));
+        }
+        addMember(name, MemberType.LIBRARY, library);
     }
 
-    public void addConstant(String name, double value) throws QtfParseException {
-        int id = addMember(name, MemberType.CONSTANT);
-        constants.put(id, value);
+    public VariableRef addInputVariable(String name, int index) throws QtfParseException {
+        try {
+            VariableRef var = globalScope.members.<VariableRef> put("in:" + name,
+                    MemberType.VARIABLE, () -> new VariableRef(index, VariableType.INPUT));
+            inputs.put(name, index);
+            return var;
+        } catch (QtfException e) {
+            throw new QtfParseException(e);
+        }
     }
 
-    public void addFunction(String name, FunctionAddress address) throws QtfParseException {
-        int id = addMember(name, MemberType.FUNCTION);
-        functions.put(id, address);
+    public VariableRef addOutputVariable(String name) throws QtfParseException {
+        try {
+            VariableRef var = globalScope.members.<VariableRef> put(name,
+                    MemberType.VARIABLE, () -> new VariableRef(outputs.size(), VariableType.OUTPUT));
+            outputs.add(name);
+            return var;
+        } catch (QtfException e) {
+            throw new QtfParseException(e);
+        }
     }
 
     public int defineFunction(JvmFunctionDefinition composer) {
@@ -83,53 +95,12 @@ public class SyntaxContext {
         return functionDefinitions.size() - 1;
     }
 
-    private Scope getScopeFor(MemberType type) {
-        return type.isLocal() ? scope() : globalScope;
-    }
-
-    public int addMember(String name, MemberType type) throws QtfParseException {
-        try {
-            return getScopeFor(type).put(name, type);
-        } catch (QtfException e) {
-            throw new QtfParseException(e);
-        }
-    }
-
-    public int getMemberId(String name, MemberType expectedType) throws QtfParseException {
-        try {
-            return getScopeFor(expectedType).get(name, expectedType);
-        } catch (QtfException e) {
-            throw new QtfParseException(e);
-        }
-    }
-
-    public boolean hasMember(String name, MemberType expectedType) {
-        return getScopeFor(expectedType).has(name, expectedType);
-    }
-
-    public void addLibrary(String name, String key) throws QtfParseException {
-        if (compiler.getLibrary(key) == null) {
-            throw new QtfParseException("Unknown library '%s'".formatted(key));
-        }
-        int id = addMember(name, MemberType.LIBRARY);
-        libraryKeys[id] = key;
-    }
-
-    public QtfLibrary getLibrary(int id) {
-        return compiler.getLibrary(libraryKeys[id]);
-    }
-
-    public QtfLibrary getLibrary(String name) throws QtfParseException {
-        int id = getMemberId(name, MemberType.LIBRARY);
-        return getLibrary(id);
-    }
-
     public Map<String, Integer> getInputs() {
         return inputs;
     }
 
     public List<String> getOutputs() {
-        return globalScope.getIdMap(MemberType.OUTPUT_VARIABLE);
+        return outputs;
     }
 
     public JvmClassComposer createClassComposer(String className) {
@@ -151,40 +122,36 @@ public class SyntaxContext {
     private class DefaultNamespace implements Namespace {
         @Override
         public VariableRef computeVariable(String name, boolean isDefinition) throws QtfException {
-            int id;
             if (isDefinition) {
-                id = scope().put(name, MemberType.VARIABLE);
-            } else {
-                id = scope().get(name, MemberType.VARIABLE);
+                VariableType type = scope().isParameter(name) ? VariableType.PARAM : VariableType.LOCAL;
+                return addLocalVariable(name, type);
             }
-            return new VariableRef(id, scope().isParameter(name) ? VariableType.PARAM : VariableType.LOCAL);
+            return getMember(name, MemberType.VARIABLE);
         }
 
         @Override
         public boolean hasVariable(String name) {
-            return scope().has(name, MemberType.VARIABLE);
+            return hasMember(name, MemberType.VARIABLE);
         }
 
         @Override
         public FunctionAddress getFunction(String name) throws QtfException {
-            int id = scope().get(name, MemberType.FUNCTION);
-            return functions.get(id);
+            return getMember(name, MemberType.FUNCTION);
         }
 
         @Override
         public boolean hasFunction(String name) {
-            return scope().has(name, MemberType.FUNCTION);
+            return hasMember(name, MemberType.FUNCTION);
         }
 
         @Override
         public double getConstant(String name) throws QtfException {
-            int id = scope().get(name, MemberType.CONSTANT);
-            return constants.get(id);
+            return getMember(name, MemberType.CONSTANT);
         }
 
         @Override
         public boolean hasConstant(String name) {
-            return scope().has(name, MemberType.CONSTANT);
+            return hasMember(name, MemberType.CONSTANT);
         }
     }
 }

@@ -8,6 +8,7 @@ import com.fiskmods.quantify.jvm.JvmFunctionDefinition;
 import com.fiskmods.quantify.lexer.token.Token;
 import com.fiskmods.quantify.lexer.token.TokenClass;
 import com.fiskmods.quantify.member.FunctionScope;
+import com.fiskmods.quantify.member.MemberType;
 import com.fiskmods.quantify.parser.QtfParser;
 import com.fiskmods.quantify.parser.SyntaxContext;
 import com.fiskmods.quantify.parser.SyntaxParser;
@@ -42,7 +43,7 @@ record FunctionDef(DefinedFunctionAddress address, JvmFunction body, ReturnValue
         @Override
         public JvmFunction accept(QtfParser parser, SyntaxContext context) throws QtfParseException {
             DefinedFunctionAddress address = new DefinedFunctionAddress();
-            context.addFunction(name, address);
+            context.addMember(name, MemberType.FUNCTION, address);
 
             parser.next(TokenClass.OPEN_PARENTHESIS);
             String[] parameters = parseParameters(parser);

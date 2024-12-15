@@ -9,7 +9,7 @@ import com.fiskmods.quantify.parser.SyntaxContext;
 import com.fiskmods.quantify.parser.SyntaxParser;
 
 class OutputParser implements SyntaxParser<JvmFunction> {
-    public static final OutputParser INSTANCE = new OutputParser();
+    static final OutputParser INSTANCE = new OutputParser();
 
     @Override
     public JvmFunction accept(QtfParser parser, SyntaxContext context) throws QtfParseException {
@@ -17,7 +17,7 @@ class OutputParser implements SyntaxParser<JvmFunction> {
         parser.next(TokenClass.COLON);
 
         String name = parser.next(TokenClass.IDENTIFIER).getString();
-        context.addMember(name, MemberType.OUTPUT);
+        context.addMember(name, MemberType.OUTPUT, name);
         parser.next(TokenClass.TERMINATOR);
         return null;
     }

@@ -14,9 +14,9 @@ import org.objectweb.asm.MethodVisitor;
 import java.util.function.UnaryOperator;
 
 record StatementBody(SyntaxTree tree) implements JvmFunction {
-    public static final StatementBodyParser PARSER = new StatementBodyParser(Scope::copy);
+    static final StatementBodyParser PARSER = new StatementBodyParser(Scope::copy);
 
-    public static StatementBodyParser parser(Namespace namespace) {
+    static StatementBodyParser parser(Namespace namespace) {
         return new StatementBodyParser(t -> t.copy(namespace));
     }
 

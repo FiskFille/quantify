@@ -13,7 +13,7 @@ import com.fiskmods.quantify.parser.SyntaxParser;
 import org.objectweb.asm.MethodVisitor;
 
 record InterpolateStatement(Value progress, VariableRef substitution, JvmFunction body) implements JvmFunction {
-    public static final SyntaxParser<InterpolateStatement> PARSER = new InterpolateStatementParser();
+    static final SyntaxParser<InterpolateStatement> PARSER = new InterpolateStatementParser();
 
     @Override
     public void apply(MethodVisitor mv) {
@@ -42,13 +42,11 @@ record InterpolateStatement(Value progress, VariableRef substitution, JvmFunctio
                 substitution = null;
             } else {
                 // Store progress value in a variable if it's not a constant
-                int id;
                 if (context.hasMember(Keywords.INTERPOLATE, MemberType.VARIABLE)) {
-                    id = context.getMemberId(Keywords.INTERPOLATE, MemberType.VARIABLE);
+                    substitution = context.getMember(Keywords.INTERPOLATE, MemberType.VARIABLE);
                 } else {
-                    id = context.addMember(Keywords.INTERPOLATE, MemberType.VARIABLE);
+                    substitution = context.addLocalVariable(Keywords.INTERPOLATE, VariableType.LOCAL);
                 }
-                substitution = new VariableRef(id, VariableType.LOCAL);
             }
 
             StatementBody body = parser.next(new StatementBody.StatementBodyParser(t -> {

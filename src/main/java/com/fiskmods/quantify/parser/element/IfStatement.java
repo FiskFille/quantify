@@ -12,7 +12,7 @@ import org.objectweb.asm.MethodVisitor;
 import static org.objectweb.asm.Opcodes.*;
 
 record IfStatement(Value condition, JvmFunction body, JvmFunction elseBody) implements JvmFunction {
-    public static final SyntaxParser<IfStatement> PARSER = new IfStatementParser();
+    static final SyntaxParser<IfStatement> PARSER = new IfStatementParser();
 
     @Override
     public void apply(MethodVisitor mv) {

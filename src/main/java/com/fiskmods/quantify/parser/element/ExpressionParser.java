@@ -14,7 +14,7 @@ import java.util.Deque;
 import java.util.List;
 
 class ExpressionParser implements SyntaxParser<Value> {
-    public static final ExpressionParser INSTANCE = new ExpressionParser();
+    static final ExpressionParser INSTANCE = new ExpressionParser();
 
     @Override
     public Value accept(QtfParser parser, SyntaxContext context) throws QtfParseException {

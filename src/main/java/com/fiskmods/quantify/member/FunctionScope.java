@@ -2,11 +2,8 @@ package com.fiskmods.quantify.member;
 
 import com.fiskmods.quantify.exception.QtfException;
 import com.fiskmods.quantify.exception.QtfParseException;
+import com.fiskmods.quantify.jvm.VariableType;
 import com.fiskmods.quantify.parser.SyntaxContext;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 public class FunctionScope extends Scope {
     private final String[] parameters;
@@ -23,18 +20,11 @@ public class FunctionScope extends Scope {
             Scope prevScope = context.scope();
             FunctionScope scope = new FunctionScope(prevScope.namespace, parameters, 0);
             scope.lerpProgress = prevScope.lerpProgress;
-
-            for (Map.Entry<MemberType, List<String>> e : prevScope.ids.entrySet()) {
-                MemberType type = e.getKey();
-                if (type == MemberType.VARIABLE) {
-                    continue;
-                }
-                scope.ids.put(type, e.getValue());
-                e.getValue().forEach(k -> scope.types.put(k, type));
-            }
+            scope.localIndexOffset = 0;
+            scope.members.inheritAllExcept(prevScope.members, MemberType.VARIABLE);
 
             for (String param : parameters) {
-                scope.put(param, MemberType.VARIABLE);
+                scope.addLocalVariable(param, VariableType.PARAM);
             }
             return scope;
         } catch (QtfException e) {
@@ -46,8 +36,8 @@ public class FunctionScope extends Scope {
     public FunctionScope copy(Namespace namespace) {
         FunctionScope scope = new FunctionScope(namespace, parameters, level + 1);
         scope.lerpProgress = lerpProgress;
-        scope.types.putAll(types);
-        ids.forEach((k, v) -> scope.ids.put(k, new ArrayList<>(v)));
+        scope.localIndexOffset = localIndexOffset;
+        scope.members.inherit(members);
         return scope;
     }
 

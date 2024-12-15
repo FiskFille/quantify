@@ -46,7 +46,9 @@ public record VariableRef(int id, VariableType type) implements Value, VarAddres
 
     public static SyntaxParser<VariableRef> parseOutput(String parentName, String name) {
         return (parser, context) -> {
-            context.getMemberId(parentName, MemberType.OUTPUT);
+            // Intentionally trigger exception if output doesn't exist
+            context.getMember(parentName, MemberType.OUTPUT);
+
             StringBuilder nameBuilder = new StringBuilder(name);
             String next;
             while ((next = nextName(parser)) != null) {
@@ -55,13 +57,16 @@ public record VariableRef(int id, VariableType type) implements Value, VarAddres
             }
 
             next = nameBuilder.toString();
-            int id;
-            if (context.hasMember(next, MemberType.OUTPUT_VARIABLE)) {
-                id = context.getMemberId(next, MemberType.OUTPUT_VARIABLE);
-            } else {
-                id = context.addMember(next, MemberType.OUTPUT_VARIABLE);
+
+            try {
+                if (context.global().members.has(next, MemberType.VARIABLE)) {
+                    return context.global().members.get(next, MemberType.VARIABLE);
+                } else {
+                    return context.addOutputVariable(next);
+                }
+            } catch (QtfException e) {
+                throw new QtfParseException(e);
             }
-            return new VariableRef(id, VariableType.OUTPUT);
         };
     }
 

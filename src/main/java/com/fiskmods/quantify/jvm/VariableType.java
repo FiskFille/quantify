@@ -17,12 +17,4 @@ public enum VariableType {
             default -> throw new UnsupportedOperationException();
         };
     }
-
-    public int localIndex(int id) {
-        return switch (this) {
-            case LOCAL -> id * 2 + 3;
-            case PARAM -> id * 2;
-            default -> throw new UnsupportedOperationException();
-        };
-    }
 }

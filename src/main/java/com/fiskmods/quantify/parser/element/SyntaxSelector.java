@@ -4,11 +4,13 @@ import com.fiskmods.quantify.exception.QtfParseException;
 import com.fiskmods.quantify.lexer.token.Token;
 import com.fiskmods.quantify.lexer.token.TokenClass;
 import com.fiskmods.quantify.library.QtfLibrary;
-import com.fiskmods.quantify.member.MemberType;
 import com.fiskmods.quantify.member.Namespace;
+import com.fiskmods.quantify.member.MemberType;
 import com.fiskmods.quantify.parser.QtfParser;
 import com.fiskmods.quantify.parser.SyntaxContext;
 import com.fiskmods.quantify.parser.SyntaxParser;
+
+import java.util.Optional;
 
 public class SyntaxSelector {
     public static SyntaxParser<?> selectSyntax(QtfParser parser, SyntaxContext context, Token next)
@@ -41,13 +43,12 @@ public class SyntaxSelector {
     private static SyntaxParser<?> selectIdentifierSyntax(QtfParser parser, SyntaxContext context, Token next)
             throws QtfParseException {
         String name = next.getString();
-        MemberType memberType = context.typeOf(name);
+        Optional<QtfLibrary> library = context.findMember(name, MemberType.LIBRARY);
 
-        if (memberType == MemberType.LIBRARY) {
-            QtfLibrary library = context.getLibrary(name);
+        if (library.isPresent()) {
             parser.clearPeekedToken();
             parser.next(TokenClass.DOT);
-            return FunctionRef.parser(Namespace.of(library), false);
+            return FunctionRef.parser(Namespace.of(library.get()), false);
         }
         if (context.namespace().hasFunction(name)) {
             return FunctionRef.parser(context.namespace(), false);

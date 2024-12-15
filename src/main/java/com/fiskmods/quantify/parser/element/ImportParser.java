@@ -8,7 +8,7 @@ import com.fiskmods.quantify.parser.SyntaxContext;
 import com.fiskmods.quantify.parser.SyntaxParser;
 
 class ImportParser implements SyntaxParser<JvmFunction> {
-    public static final ImportParser INSTANCE = new ImportParser();
+    static final ImportParser INSTANCE = new ImportParser();
 
     @Override
     public JvmFunction accept(QtfParser parser, SyntaxContext context) throws QtfParseException {

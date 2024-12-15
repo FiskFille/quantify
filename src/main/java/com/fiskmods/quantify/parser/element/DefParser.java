@@ -8,7 +8,7 @@ import com.fiskmods.quantify.parser.SyntaxContext;
 import com.fiskmods.quantify.parser.SyntaxParser;
 
 class DefParser implements SyntaxParser<JvmFunction> {
-    public static final DefParser INSTANCE = new DefParser();
+    static final DefParser INSTANCE = new DefParser();
 
     @Override
     public JvmFunction accept(QtfParser parser, SyntaxContext context) throws QtfParseException {

@@ -10,16 +10,18 @@ public enum TokenClass {
     NUM_LITERAL,
     STR_LITERAL,
 
-    // Keywords
+    // Syntax keywords
+    DEF,
+    CONST,
     IMPORT,
     INPUT,
     OUTPUT,
+
+    // Control keywords
     IF,
     ELSE,
     INTERPOLATE,
     NAMESPACE,
-    DEF,
-    CONST,
     RETURN,
 
     // Symbols

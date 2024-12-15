@@ -1,18 +1,18 @@
 package com.fiskmods.quantify.member;
 
 import com.fiskmods.quantify.exception.QtfException;
+import com.fiskmods.quantify.jvm.VariableType;
 import com.fiskmods.quantify.parser.element.Value;
-
-import java.util.*;
+import com.fiskmods.quantify.parser.element.VariableRef;
 
 public class Scope {
-    protected final Map<String, MemberType> types = new HashMap<>();
-    protected final Map<MemberType, List<String>> ids = new EnumMap<>(MemberType.class);
+    public final MemberMap members = new MemberMap();
+    protected final int level;
 
     protected Namespace namespace;
     protected Value lerpProgress;
 
-    protected final int level;
+    protected int localIndexOffset = 3;
 
     public Scope(Namespace namespace, int level) {
         this.namespace = namespace;
@@ -22,8 +22,8 @@ public class Scope {
     public Scope copy(Namespace namespace) {
         Scope scope = new Scope(namespace, level + 1);
         scope.lerpProgress = lerpProgress;
-        scope.types.putAll(types);
-        ids.forEach((k, v) -> scope.ids.put(k, new ArrayList<>(v)));
+        scope.localIndexOffset = localIndexOffset;
+        scope.members.inherit(members);
         return scope;
     }
 
@@ -47,10 +47,6 @@ public class Scope {
         return lerpProgress;
     }
 
-    public int level() {
-        return level;
-    }
-
     public boolean isParameter(String name) {
         return false;
     }
@@ -59,43 +55,11 @@ public class Scope {
         return level > 0;
     }
 
-    public List<String> getIdMap(MemberType type) {
-        List<String> list = ids.get(type);
-        return list != null ? list : List.of();
-    }
-
-    public int put(String name, MemberType type) throws QtfException {
-        if (types.put(name, type) != null) {
-            throw new QtfException("Duplicate member '%s'".formatted(name));
-        }
-        List<String> idList = ids.computeIfAbsent(type, k -> new ArrayList<>());
-        idList.add(name);
-        return idList.size() - 1;
-    }
-
-    public MemberType getType(String name) {
-        return types.getOrDefault(name, MemberType.UNKNOWN);
-    }
-
-    public boolean has(String name, MemberType expectedType) {
-        return types.get(name) == expectedType;
-    }
-
-    public int get(String name, MemberType expectedType) throws QtfException {
-        MemberType foundType = types.get(name);
-        if (foundType == null) {
-            throw new QtfException("Undefined %s '%s'".formatted(expectedType, name));
-        }
-        if (foundType != expectedType) {
-            throw new QtfException("Expected '%s' to be a %s, was %s"
-                    .formatted(name, expectedType, foundType));
-        }
-
-        int id = ids.computeIfAbsent(expectedType, k -> new ArrayList<>())
-                .indexOf(name);
-        if (id == -1) {
-            throw new QtfException("Nonexistent %s id %d".formatted(expectedType, id));
-        }
-        return id;
+    public VariableRef addLocalVariable(String name, VariableType type) throws QtfException {
+        return members.<VariableRef> put(name, MemberType.VARIABLE, () -> {
+            VariableRef var = new VariableRef(localIndexOffset, type);
+            localIndexOffset += 2;
+            return var;
+        });
     }
 }

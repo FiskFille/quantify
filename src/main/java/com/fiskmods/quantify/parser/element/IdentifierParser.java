@@ -4,13 +4,17 @@ import com.fiskmods.quantify.exception.QtfException;
 import com.fiskmods.quantify.exception.QtfParseException;
 import com.fiskmods.quantify.lexer.Keywords;
 import com.fiskmods.quantify.lexer.token.TokenClass;
+import com.fiskmods.quantify.member.MemberMap;
+import com.fiskmods.quantify.member.MemberType;
 import com.fiskmods.quantify.member.Namespace;
 import com.fiskmods.quantify.parser.QtfParser;
 import com.fiskmods.quantify.parser.SyntaxContext;
 import com.fiskmods.quantify.parser.SyntaxParser;
 
+import java.util.Optional;
+
 class IdentifierParser implements SyntaxParser<Value> {
-    public static final IdentifierParser INSTANCE = new IdentifierParser();
+    static final IdentifierParser INSTANCE = new IdentifierParser();
 
     @Override
     public Value accept(QtfParser parser, SyntaxContext context) throws QtfParseException {
@@ -18,11 +22,21 @@ class IdentifierParser implements SyntaxParser<Value> {
         if (Keywords.THIS.equals(name)) {
             return accept(parser, context, context.getDefaultNamespace(), nextName(parser), false);
         }
-        return switch (context.typeOf(name)) {
-            case OUTPUT -> parser.next(VariableRef.parseOutput(name, nextName(parser)));
-            case LIBRARY -> accept(parser, context, Namespace.of(context.getLibrary(name)), nextName(parser), false);
-            default -> accept(parser, context, context.namespace(), name, true);
-        };
+
+        Optional<MemberMap.Member<?>> member = context.findMember(name);
+        if (member.isPresent()) {
+            MemberType<?> type = member.get().type();
+
+            if (type == MemberType.OUTPUT) {
+                return parser.next(VariableRef.parseOutput(name, nextName(parser)));
+            }
+            if (type == MemberType.LIBRARY) {
+                return accept(parser, context,
+                        Namespace.of(context.getMember(name, MemberType.LIBRARY)),
+                        nextName(parser), false);
+            }
+        }
+        return accept(parser, context, context.namespace(), name, true);
     }
 
     private Value accept(QtfParser parser, SyntaxContext context, Namespace namespace, String name,

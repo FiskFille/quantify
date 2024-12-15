@@ -121,12 +121,14 @@ public class QtfLexer {
                 }
                 if ((result = scanner.next(ScannerPattern.IDENTIFIER)) != null) {
                     switch (result) {
-                        // Keywords
+                        // Syntax keywords
                         case Keywords.DEF -> tokens.accept(scanner.newToken(DEF));
                         case Keywords.CONST -> tokens.accept(scanner.newToken(CONST));
                         case Keywords.IMPORT -> tokens.accept(scanner.newToken(IMPORT));
                         case Keywords.INPUT -> tokens.accept(scanner.newToken(INPUT));
                         case Keywords.OUTPUT -> tokens.accept(scanner.newToken(OUTPUT));
+
+                        // Control keywords
                         case Keywords.IF -> tokens.accept(scanner.newToken(IF));
                         case Keywords.ELSE -> tokens.accept(scanner.newToken(ELSE));
                         case Keywords.INTERPOLATE -> tokens.accept(scanner.newToken(INTERPOLATE));
