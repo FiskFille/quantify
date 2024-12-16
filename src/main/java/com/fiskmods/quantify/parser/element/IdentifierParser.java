@@ -38,7 +38,8 @@ class IdentifierParser implements SyntaxParser<Value> {
             }
             if (type == MemberType.STRUCT) {
                 Struct struct = (Struct) member.get().value();
-                return accept(parser, context, struct, nextName(parser), false);
+                name = StructRefParser.expandName(parser, nextName(parser));
+                return accept(parser, context, struct, name, false);
             }
         }
         return accept(parser, context, context.namespace(), name, true);

@@ -28,9 +28,10 @@ public class CommentScannerPattern implements ScannerPattern {
         for (; endIndex < text.length(); ++endIndex) {
             c1 = c;
             if ((c = text.charAt(endIndex)) == '/' && c1 == '#') {
+                ++endIndex;
                 break;
             }
         }
-        return new MatchResult(text.substring(startIndex, endIndex + 1));
+        return new MatchResult(text.substring(startIndex, endIndex));
     }
 }

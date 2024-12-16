@@ -29,7 +29,9 @@ class VariableParser {
                 String child = IdentifierParser.nextName(parser);
                 if (child != null) {
                     Optional<Struct> struct = context.findMember(name, MemberType.STRUCT);
+
                     if (struct.isPresent()) {
+                        child = StructRefParser.expandName(parser, child);
                         return struct.get().computeVariable(child, false);
                     }
                     return parser.next(parseOutput(name, child));

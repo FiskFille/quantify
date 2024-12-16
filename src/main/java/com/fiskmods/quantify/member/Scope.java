@@ -60,7 +60,7 @@ public class Scope {
 
     public Struct addStruct(String name) throws QtfException {
         return members.<Struct> put(name, MemberType.STRUCT, () -> {
-            Struct struct = new Struct(localIndexOffset);
+            Struct struct = Struct.create(localIndexOffset);
             ++localIndexOffset;
             return struct;
         });

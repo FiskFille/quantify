@@ -56,19 +56,29 @@ public class MemberMap {
         return value;
     }
 
+    public void typeCheck(String name, MemberType<?> expectedType) throws QtfException {
+        Member<?> foundMember = members.get(name);
+        if (foundMember != null) {
+            foundMember.typeCheck(name, expectedType);
+        }
+    }
+
     @SuppressWarnings("unchecked")
     public <T> T get(String name, MemberType<T> expectedType) throws QtfException {
         Member<?> foundMember = members.get(name);
         if (foundMember == null) {
             throw new QtfException("Undefined %s '%s'".formatted(expectedType.name(), name));
         }
-        if (foundMember.type() != expectedType) {
-            throw new QtfException("Expected '%s' to be a %s, was %s"
-                    .formatted(name, expectedType.name(), foundMember.type().name()));
-        }
+        foundMember.typeCheck(name, expectedType);
         return (T) foundMember.value();
     }
 
     public record Member<T>(MemberType<T> type, T value) {
+        public void typeCheck(String name, MemberType<?> expectedType) throws QtfException {
+            if (type != expectedType) {
+                throw new QtfException("Expected '%s' to be a %s, was %s"
+                        .formatted(name, expectedType.name(), type.name()));
+            }
+        }
     }
 }

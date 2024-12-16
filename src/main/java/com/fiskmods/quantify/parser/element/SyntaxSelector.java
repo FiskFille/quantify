@@ -77,6 +77,10 @@ public class SyntaxSelector {
         parser.next(TokenClass.DOT);
         name = parser.next(TokenClass.IDENTIFIER).getString();
 
+        if (type == MemberType.STRUCT) {
+            name = StructRefParser.expandName(parser, name);
+        }
+
         if (namespace.hasFunction(name)) {
             try {
                 return FunctionRef.parser(namespace.getFunction(name), false);
