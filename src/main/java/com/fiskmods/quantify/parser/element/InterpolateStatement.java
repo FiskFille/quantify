@@ -2,7 +2,7 @@ package com.fiskmods.quantify.parser.element;
 
 import com.fiskmods.quantify.exception.QtfParseException;
 import com.fiskmods.quantify.jvm.JvmFunction;
-import com.fiskmods.quantify.jvm.VariableType;
+import com.fiskmods.quantify.jvm.VarAddress;
 import com.fiskmods.quantify.lexer.Keywords;
 import com.fiskmods.quantify.lexer.token.TokenClass;
 import com.fiskmods.quantify.member.MemberType;
@@ -12,7 +12,7 @@ import com.fiskmods.quantify.parser.SyntaxContext;
 import com.fiskmods.quantify.parser.SyntaxParser;
 import org.objectweb.asm.MethodVisitor;
 
-record InterpolateStatement(Value progress, VariableRef substitution, JvmFunction body) implements JvmFunction {
+record InterpolateStatement(Value progress, VarAddress substitution, JvmFunction body) implements JvmFunction {
     static final SyntaxParser<InterpolateStatement> PARSER = new InterpolateStatementParser();
 
     @Override
@@ -30,7 +30,7 @@ record InterpolateStatement(Value progress, VariableRef substitution, JvmFunctio
         @Override
         public InterpolateStatement accept(QtfParser parser, SyntaxContext context) throws QtfParseException {
             Value progress;
-            VariableRef substitution;
+            VarAddress substitution;
 
             parser.next(TokenClass.INTERPOLATE);
             parser.next(TokenClass.OPEN_PARENTHESIS);
@@ -38,14 +38,14 @@ record InterpolateStatement(Value progress, VariableRef substitution, JvmFunctio
             parser.next(TokenClass.CLOSE_PARENTHESIS);
             parser.skip(TokenClass.TERMINATOR);
 
-            if (progress instanceof NumLiteral || progress instanceof VariableRef) {
+            if (progress instanceof NumLiteral || progress instanceof VarAddress) {
                 substitution = null;
             } else {
                 // Store progress value in a variable if it's not a constant
                 if (context.hasMember(Keywords.INTERPOLATE, MemberType.VARIABLE)) {
                     substitution = context.getMember(Keywords.INTERPOLATE, MemberType.VARIABLE);
                 } else {
-                    substitution = context.addLocalVariable(Keywords.INTERPOLATE, VariableType.LOCAL);
+                    substitution = context.addLocalVariable(Keywords.INTERPOLATE);
                 }
             }
 

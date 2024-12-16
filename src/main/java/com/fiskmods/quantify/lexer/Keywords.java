@@ -4,6 +4,7 @@ public interface Keywords {
     // Syntax
     String DEF = "def";
     String CONST = "const";
+    String STRUCT = "struct";
     String THIS = "this";
     String IMPORT = "import";
     String INPUT = "input";

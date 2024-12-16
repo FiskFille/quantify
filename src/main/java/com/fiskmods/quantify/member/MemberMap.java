@@ -31,7 +31,7 @@ public class MemberMap {
     public <T> Optional<T> find(String name, MemberType<T> expectedType) {
         Member<?> member = members.get(name);
         return member != null && member.type() == expectedType ?
-                (Optional<T>) Optional.of(member) : Optional.empty();
+                (Optional<T>) Optional.of(member.value()) : Optional.empty();
     }
 
     public boolean has(String name, MemberType<?> expectedType) {

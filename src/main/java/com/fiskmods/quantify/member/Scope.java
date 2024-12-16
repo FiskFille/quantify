@@ -1,9 +1,8 @@
 package com.fiskmods.quantify.member;
 
 import com.fiskmods.quantify.exception.QtfException;
-import com.fiskmods.quantify.jvm.VariableType;
+import com.fiskmods.quantify.jvm.VarAddress;
 import com.fiskmods.quantify.parser.element.Value;
-import com.fiskmods.quantify.parser.element.VariableRef;
 
 public class Scope {
     public final MemberMap members = new MemberMap();
@@ -47,19 +46,23 @@ public class Scope {
         return lerpProgress;
     }
 
-    public boolean isParameter(String name) {
-        return false;
-    }
-
     public boolean isInnerScope() {
         return level > 0;
     }
 
-    public VariableRef addLocalVariable(String name, VariableType type) throws QtfException {
-        return members.<VariableRef> put(name, MemberType.VARIABLE, () -> {
-            VariableRef var = new VariableRef(localIndexOffset, type);
+    public VarAddress addLocalVariable(String name) throws QtfException {
+        return members.<VarAddress> put(name, MemberType.VARIABLE, () -> {
+            VarAddress var = VarAddress.local(localIndexOffset);
             localIndexOffset += 2;
             return var;
+        });
+    }
+
+    public Struct addStruct(String name) throws QtfException {
+        return members.<Struct> put(name, MemberType.STRUCT, () -> {
+            Struct struct = new Struct(localIndexOffset);
+            ++localIndexOffset;
+            return struct;
         });
     }
 }

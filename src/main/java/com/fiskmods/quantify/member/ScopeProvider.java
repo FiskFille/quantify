@@ -2,10 +2,10 @@ package com.fiskmods.quantify.member;
 
 import com.fiskmods.quantify.exception.QtfException;
 import com.fiskmods.quantify.exception.QtfParseException;
-import com.fiskmods.quantify.jvm.VariableType;
-import com.fiskmods.quantify.parser.element.VariableRef;
+import com.fiskmods.quantify.jvm.VarAddress;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 public interface ScopeProvider {
@@ -41,9 +41,25 @@ public interface ScopeProvider {
         }
     }
 
-    default VariableRef addLocalVariable(String name, VariableType type) throws QtfParseException {
+    default <T> void addMember(String name, MemberType<T> type, Supplier<T> valueSupplier) throws QtfParseException {
         try {
-            return scope().addLocalVariable(name, type);
+            type.scope(this).members.put(name, type, valueSupplier);
+        } catch (QtfException e) {
+            throw new QtfParseException(e);
+        }
+    }
+
+    default VarAddress addLocalVariable(String name) throws QtfParseException {
+        try {
+            return scope().addLocalVariable(name);
+        } catch (QtfException e) {
+            throw new QtfParseException(e);
+        }
+    }
+
+    default Struct addStruct(String name) throws QtfParseException {
+        try {
+            return scope().addStruct(name);
         } catch (QtfException e) {
             throw new QtfParseException(e);
         }

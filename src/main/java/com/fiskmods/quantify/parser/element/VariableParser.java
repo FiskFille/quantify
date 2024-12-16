@@ -3,34 +3,35 @@ package com.fiskmods.quantify.parser.element;
 import com.fiskmods.quantify.exception.QtfException;
 import com.fiskmods.quantify.exception.QtfParseException;
 import com.fiskmods.quantify.jvm.VarAddress;
-import com.fiskmods.quantify.jvm.VariableType;
 import com.fiskmods.quantify.lexer.token.TokenClass;
 import com.fiskmods.quantify.member.MemberType;
-import com.fiskmods.quantify.parser.QtfParser;
+import com.fiskmods.quantify.member.Struct;
 import com.fiskmods.quantify.parser.SyntaxParser;
 
-public record VariableRef(int id, VariableType type) implements Value, VarAddress {
-    @Override
-    public boolean isNegated() {
-        return false;
-    }
+import java.util.Optional;
 
-    public static SyntaxParser<VariableRef> parser(boolean isDefinition) {
+class VariableParser {
+    static SyntaxParser<VarAddress> parser(boolean isDefinition) {
         return (parser, context) -> {
             String name = parser.next(TokenClass.IDENTIFIER).getString();
             return parser.next(parser(name, isDefinition));
         };
     }
 
-    public static SyntaxParser<VariableRef> parser(String name, boolean isDefinition) throws QtfParseException {
+    static SyntaxParser<VarAddress> parser(String name, boolean isDefinition) throws QtfParseException {
         return (parser, context) -> {
             try {
                 // Definitions always belong to the default namespace
                 if (isDefinition) {
                     return context.getDefaultNamespace().computeVariable(name, true);
                 }
-                String child = nextName(parser);
+
+                String child = IdentifierParser.nextName(parser);
                 if (child != null) {
+                    Optional<Struct> struct = context.findMember(name, MemberType.STRUCT);
+                    if (struct.isPresent()) {
+                        return struct.get().computeVariable(child, false);
+                    }
                     return parser.next(parseOutput(name, child));
                 }
 
@@ -44,37 +45,29 @@ public record VariableRef(int id, VariableType type) implements Value, VarAddres
         };
     }
 
-    public static SyntaxParser<VariableRef> parseOutput(String parentName, String name) {
+    static SyntaxParser<VarAddress> parseOutput(String parentName, String name) {
         return (parser, context) -> {
             // Intentionally trigger exception if output doesn't exist
             context.getMember(parentName, MemberType.OUTPUT);
 
             StringBuilder nameBuilder = new StringBuilder(name);
             String next;
-            while ((next = nextName(parser)) != null) {
+            while ((next = IdentifierParser.nextName(parser)) != null) {
                 nameBuilder.append('.')
                         .append(next);
             }
 
             next = nameBuilder.toString();
 
-            try {
-                if (context.global().members.has(next, MemberType.VARIABLE)) {
+            if (context.global().members.has(next, MemberType.VARIABLE)) {
+                try {
                     return context.global().members.get(next, MemberType.VARIABLE);
-                } else {
-                    return context.addOutputVariable(next);
+                } catch (QtfException e) {
+                    throw new QtfParseException(e);
                 }
-            } catch (QtfException e) {
-                throw new QtfParseException(e);
+            } else {
+                return context.addOutputVariable(next);
             }
         };
-    }
-
-    private static String nextName(QtfParser parser) throws QtfParseException {
-        if (parser.isNext(TokenClass.DOT)) {
-            parser.clearPeekedToken();
-            return parser.next(TokenClass.IDENTIFIER).getString();
-        }
-        return null;
     }
 }

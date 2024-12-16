@@ -7,7 +7,6 @@ import com.fiskmods.quantify.jvm.VarAddress;
 import com.fiskmods.quantify.lexer.token.Operator;
 import com.fiskmods.quantify.lexer.token.TokenClass;
 import com.fiskmods.quantify.parser.QtfParser;
-import com.fiskmods.quantify.parser.SyntaxContext;
 import com.fiskmods.quantify.parser.SyntaxParser;
 import org.objectweb.asm.MethodVisitor;
 
@@ -25,66 +24,53 @@ public interface Assignable extends JvmFunction {
 
     void lerp(MethodVisitor mv, Value value, Value progress, boolean rotational);
 
-    SyntaxParser<Assignable> PARSER = (parser, context) -> {
-        String name = parser.next(TokenClass.IDENTIFIER).getString();
-        if (parser.isNext(TokenClass.OPERATOR, Operator.SUB)) {
-            parser.clearPeekedToken();
-            return parser.next(new AssignableParser(name, true, false));
-        }
-        return parser.next(new AssignableParser(name, false, false));
-    };
+    static SyntaxParser<Assignable> parse(boolean isDefinition) {
+        return (parser, context) -> {
+            VarAddress var = nextVariable(parser, isDefinition);
+            return parser.next(parseList(var, isDefinition));
+        };
+    }
 
-    record AssignableParser(String name, boolean isNegated, boolean isDefinition) implements SyntaxParser<Assignable> {
-        @Override
-        public Assignable accept(QtfParser parser, SyntaxContext context) throws QtfParseException {
-            VariableRef var = parser.next(VariableRef.parser(name, isDefinition));
+    static SyntaxParser<Assignable> parse(String name, boolean isDefinition) {
+        return (parser, context) -> {
+            VarAddress var = parser.next(VariableParser.parser(name, isDefinition));
+            return parser.next(parseList(var, isDefinition));
+        };
+    }
+
+    static SyntaxParser<Assignable> parseList(VarAddress firstVar, boolean isDefinition) {
+        return (parser, context) -> {
             if (!parser.isNext(TokenClass.COMMA)) {
-                return isNegated ? new NegatedVariable(var) : var;
+                return firstVar;
             }
 
             List<VarAddress> list = new ArrayList<>();
-            list.add(VarAddress.create(var.type(), var.id(), isNegated));
-            boolean isNegated;
-
+            list.add(firstVar);
             do {
                 parser.clearPeekedToken();
-
-                // Negated LHS variables are not allowed in assignments
-                if (!isDefinition && parser.isNext(TokenClass.OPERATOR, Operator.SUB)) {
-                    parser.clearPeekedToken();
-                    isNegated = true;
-                } else {
-                    isNegated = false;
-                }
-
-                var = parser.next(VariableRef.parser(isDefinition));
-                list.add(VarAddress.create(var.type(), var.id(), isNegated));
+                list.add(nextVariable(parser, isDefinition));
             } while (parser.isNext(TokenClass.COMMA));
 
             return new VariableList(list.toArray(new VarAddress[0]));
-        }
+        };
     }
 
-    record NegatedVariable(VariableRef var) implements Assignable {
-        @Override
-        public void apply(MethodVisitor mv) {
-            throw new UnsupportedOperationException();
+    private static VarAddress nextVariable(QtfParser parser, boolean isDefinition) throws QtfParseException {
+        boolean isNegated = isNegated(parser, isDefinition);
+        VarAddress var = parser.next(VariableParser.parser(isDefinition));
+        if (isNegated) {
+            return VarAddress.create(var.access(), true);
         }
+        return var;
+    }
 
-        @Override
-        public void set(MethodVisitor mv, Value value) {
-            var.set(mv, value.negate());
+    private static boolean isNegated(QtfParser parser, boolean isDefinition) {
+        // Negated LHS variables are not allowed in assignments
+        if (!isDefinition && parser.isNext(TokenClass.OPERATOR, Operator.SUB)) {
+            parser.clearPeekedToken();
+            return true;
         }
-
-        @Override
-        public void modify(MethodVisitor mv, Value value, Operator op) {
-            var.modify(mv, value.negate(), op);
-        }
-
-        @Override
-        public void lerp(MethodVisitor mv, Value value, Value progress, boolean rotational) {
-            var.lerp(mv, value.negate(), progress, rotational);
-        }
+        return false;
     }
 
     record VariableList(VarAddress[] addresses) implements Assignable {

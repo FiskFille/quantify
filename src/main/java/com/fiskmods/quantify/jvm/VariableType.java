@@ -3,8 +3,7 @@ package com.fiskmods.quantify.jvm;
 public enum VariableType {
     LOCAL,
     INPUT,
-    OUTPUT,
-    PARAM;
+    OUTPUT;
 
     public boolean isExternal() {
         return this == INPUT || this == OUTPUT;

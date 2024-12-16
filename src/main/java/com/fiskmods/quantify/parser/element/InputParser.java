@@ -1,7 +1,7 @@
 package com.fiskmods.quantify.parser.element;
 
 import com.fiskmods.quantify.exception.QtfParseException;
-import com.fiskmods.quantify.jvm.VariableType;
+import com.fiskmods.quantify.jvm.VarAddress;
 import com.fiskmods.quantify.lexer.token.TokenClass;
 import com.fiskmods.quantify.parser.QtfParser;
 import com.fiskmods.quantify.parser.SyntaxContext;
@@ -19,8 +19,8 @@ class InputParser implements SyntaxParser<Assignment> {
         parser.next(TokenClass.COLON);
 
         String name = parser.next(TokenClass.IDENTIFIER).getString();
-        VariableRef var = context.addLocalVariable(name, VariableType.LOCAL);
-        VariableRef inputVar = context.addInputVariable(name, index);
+        VarAddress var = context.addLocalVariable(name);
+        VarAddress inputVar = context.addInputVariable(name, index);
 
         parser.next(TokenClass.TERMINATOR);
         return new Assignment.AbsoluteAssignment(var, inputVar, null);

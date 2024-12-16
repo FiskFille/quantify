@@ -13,6 +13,7 @@ public enum TokenClass {
     // Syntax keywords
     DEF,
     CONST,
+    STRUCT,
     IMPORT,
     INPUT,
     OUTPUT,

@@ -12,7 +12,7 @@ import org.objectweb.asm.MethodVisitor;
 
 interface Assignment extends JvmFunction {
     SyntaxParser<Assignment> PARSER = (parser, context) -> {
-        Assignable target = parser.next(Assignable.PARSER);
+        Assignable target = parser.next(Assignable.parse(false));
         return parser.next(new AssignmentParser(target, false));
     };
 

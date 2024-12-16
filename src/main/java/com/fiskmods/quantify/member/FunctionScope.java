@@ -2,7 +2,6 @@ package com.fiskmods.quantify.member;
 
 import com.fiskmods.quantify.exception.QtfException;
 import com.fiskmods.quantify.exception.QtfParseException;
-import com.fiskmods.quantify.jvm.VariableType;
 import com.fiskmods.quantify.parser.SyntaxContext;
 
 public class FunctionScope extends Scope {
@@ -24,7 +23,7 @@ public class FunctionScope extends Scope {
             scope.members.inheritAllExcept(prevScope.members, MemberType.VARIABLE);
 
             for (String param : parameters) {
-                scope.addLocalVariable(param, VariableType.PARAM);
+                scope.addLocalVariable(param);
             }
             return scope;
         } catch (QtfException e) {
@@ -47,16 +46,6 @@ public class FunctionScope extends Scope {
 
     public boolean hasReturnValue() {
         return hasReturnValue;
-    }
-
-    @Override
-    public boolean isParameter(String name) {
-        for (String param : parameters) {
-            if (name.equals(param)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     @Override

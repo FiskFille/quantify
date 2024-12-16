@@ -2,11 +2,11 @@ package com.fiskmods.quantify.member;
 
 import com.fiskmods.quantify.exception.QtfException;
 import com.fiskmods.quantify.jvm.FunctionAddress;
+import com.fiskmods.quantify.jvm.VarAddress;
 import com.fiskmods.quantify.library.QtfLibrary;
-import com.fiskmods.quantify.parser.element.VariableRef;
 
 public interface Namespace {
-    VariableRef computeVariable(String name, boolean isDefinition) throws QtfException;
+    VarAddress computeVariable(String name, boolean isDefinition) throws QtfException;
 
     boolean hasVariable(String name);
 
@@ -21,7 +21,7 @@ public interface Namespace {
     static Namespace of(QtfLibrary library) {
         return new Namespace() {
             @Override
-            public VariableRef computeVariable(String name, boolean isDefinition) throws QtfException {
+            public VarAddress computeVariable(String name, boolean isDefinition) throws QtfException {
                 throw new QtfException("Undefined variable '%s' in library '%s'"
                         .formatted(name, library.getKey()));
             }

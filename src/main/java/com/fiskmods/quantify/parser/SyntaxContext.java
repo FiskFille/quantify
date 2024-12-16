@@ -6,14 +6,16 @@ import com.fiskmods.quantify.exception.QtfParseException;
 import com.fiskmods.quantify.jvm.FunctionAddress;
 import com.fiskmods.quantify.jvm.JvmClassComposer;
 import com.fiskmods.quantify.jvm.JvmFunctionDefinition;
-import com.fiskmods.quantify.jvm.VariableType;
+import com.fiskmods.quantify.jvm.VarAddress;
 import com.fiskmods.quantify.library.QtfLibrary;
 import com.fiskmods.quantify.member.*;
-import com.fiskmods.quantify.parser.element.VariableRef;
 
 import java.util.*;
 
 public class SyntaxContext implements ScopeProvider {
+    private static final int INPUT_ID = 1;
+    private static final int OUTPUT_ID = 2;
+
     private final Namespace defaultNamespace = new DefaultNamespace();
 
     private final Scope globalScope = new Scope(defaultNamespace, 0);
@@ -68,10 +70,10 @@ public class SyntaxContext implements ScopeProvider {
         addMember(name, MemberType.LIBRARY, library);
     }
 
-    public VariableRef addInputVariable(String name, int index) throws QtfParseException {
+    public VarAddress addInputVariable(String name, int index) throws QtfParseException {
         try {
-            VariableRef var = globalScope.members.<VariableRef> put("in:" + name,
-                    MemberType.VARIABLE, () -> new VariableRef(index, VariableType.INPUT));
+            VarAddress var = globalScope.members.<VarAddress> put("in:" + name,
+                    MemberType.VARIABLE, () -> VarAddress.arrayAccess(INPUT_ID, index));
             inputs.put(name, index);
             return var;
         } catch (QtfException e) {
@@ -79,10 +81,10 @@ public class SyntaxContext implements ScopeProvider {
         }
     }
 
-    public VariableRef addOutputVariable(String name) throws QtfParseException {
+    public VarAddress addOutputVariable(String name) throws QtfParseException {
         try {
-            VariableRef var = globalScope.members.<VariableRef> put(name,
-                    MemberType.VARIABLE, () -> new VariableRef(outputs.size(), VariableType.OUTPUT));
+            VarAddress var = globalScope.members.<VarAddress> put(name,
+                    MemberType.VARIABLE, () -> VarAddress.arrayAccess(OUTPUT_ID, outputs.size()));
             outputs.add(name);
             return var;
         } catch (QtfException e) {
@@ -121,10 +123,9 @@ public class SyntaxContext implements ScopeProvider {
 
     private class DefaultNamespace implements Namespace {
         @Override
-        public VariableRef computeVariable(String name, boolean isDefinition) throws QtfException {
+        public VarAddress computeVariable(String name, boolean isDefinition) throws QtfException {
             if (isDefinition) {
-                VariableType type = scope().isParameter(name) ? VariableType.PARAM : VariableType.LOCAL;
-                return addLocalVariable(name, type);
+                return addLocalVariable(name);
             }
             return getMember(name, MemberType.VARIABLE);
         }
