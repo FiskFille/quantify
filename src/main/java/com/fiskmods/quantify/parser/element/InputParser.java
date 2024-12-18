@@ -19,8 +19,8 @@ class InputParser implements SyntaxParser<Assignment> {
         parser.next(TokenClass.COLON);
 
         String name = parser.next(TokenClass.IDENTIFIER).getString();
-        VarAddress var = context.addLocalVariable(name);
-        VarAddress inputVar = context.addInputVariable(name, index);
+        VarAddress<?> var = context.addLocalVariable(name);
+        VarAddress<?> inputVar = context.addInputVariable(name, index);
 
         parser.next(TokenClass.TERMINATOR);
         return new Assignment.AbsoluteAssignment(var, inputVar, null);

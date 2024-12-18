@@ -32,7 +32,7 @@ public class QtfParser {
                 continue;
             }
 
-            SyntaxParser<?> syntax = SyntaxSelector.selectSyntax(this, context, peek());
+            SyntaxParser<?> syntax = SyntaxSelector.selectSyntax(context, peek());
             JvmFunction element = next(syntax);
             if (element != null) {
                 syntaxTree.elements().add(element);

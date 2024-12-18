@@ -1,6 +1,9 @@
 package com.fiskmods.quantify.member;
 
 import com.fiskmods.quantify.exception.QtfException;
+import com.fiskmods.quantify.jvm.VarAddress;
+import com.fiskmods.quantify.parser.element.Assignable;
+import com.fiskmods.quantify.parser.element.Value;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,6 +28,10 @@ public class MemberMap {
 
     public Optional<Member<?>> find(String name) {
         return Optional.ofNullable(members.get(name));
+    }
+
+    public boolean has(String name) {
+        return find(name).isPresent();
     }
 
     @SuppressWarnings("unchecked")
@@ -56,11 +63,10 @@ public class MemberMap {
         return value;
     }
 
-    public void typeCheck(String name, MemberType<?> expectedType) throws QtfException {
-        Member<?> foundMember = members.get(name);
-        if (foundMember != null) {
-            foundMember.typeCheck(name, expectedType);
-        }
+    @SuppressWarnings("unchecked")
+    public <T extends Value & Assignable> VarAddress<T> put(String name, Supplier<VarAddress<T>> valueSupplier)
+            throws QtfException {
+        return (VarAddress<T>) this.<VarAddress<?>> put(name, MemberType.VARIABLE, valueSupplier::get);
     }
 
     @SuppressWarnings("unchecked")
@@ -79,6 +85,12 @@ public class MemberMap {
                 throw new QtfException("Expected '%s' to be a %s, was %s"
                         .formatted(name, expectedType.name(), type.name()));
             }
+        }
+
+        @SuppressWarnings("unchecked")
+        public <U> Member<U> cast(String name, MemberType<U> expectedType) throws QtfException {
+            typeCheck(name, expectedType);
+            return (Member<U>) this;
         }
     }
 }

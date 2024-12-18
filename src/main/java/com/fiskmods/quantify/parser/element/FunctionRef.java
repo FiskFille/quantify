@@ -18,14 +18,18 @@ record FunctionRef(FunctionAddress address, Value[] args, boolean hasResult) imp
         return new FunctionRefParser(func, hasResult);
     }
 
-    static SyntaxParser<FunctionRef> parser(Namespace namespace, boolean hasResult) {
+    static SyntaxParser<FunctionRef> tryParse(String name, Namespace namespace, boolean hasResult) {
         return (parser, context) -> {
+            if (!parser.isNext(TokenClass.OPEN_PARENTHESIS)) {
+                return null;
+            }
+            FunctionAddress func;
             try {
-                String name = parser.next(TokenClass.IDENTIFIER).getString();
-                return parser.next(parser(namespace.getFunction(name), hasResult));
+                func = namespace.getFunction(name);
             } catch (QtfException e) {
                 throw new QtfParseException(e);
             }
+            return parser.next(parser(func, hasResult));
         };
     }
 

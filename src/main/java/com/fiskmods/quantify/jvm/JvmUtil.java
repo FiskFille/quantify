@@ -42,12 +42,12 @@ public class JvmUtil {
         mv.visitInsn(DASTORE);
     }
 
-    public static void set(MethodVisitor mv, VarAddress[] targets, Value value) {
+    public static void set(MethodVisitor mv, VarAddress<?>[] targets, Value value) {
         // Complex expressions only get calculated once for multi-var assignments
         if (targets.length > 1 && !(value instanceof NumLiteral)) {
             Value newValue = value;
 
-            for (VarAddress target : targets) {
+            for (VarAddress<?> target : targets) {
                 target.set(mv, newValue.negateIf(target.isNegated()));
 
                 // For all targets after the first, set them to the first target
@@ -58,18 +58,18 @@ public class JvmUtil {
             return;
         }
 
-        for (VarAddress target : targets) {
+        for (VarAddress<?> target : targets) {
             target.set(mv, value.negateIf(target.isNegated()));
         }
     }
 
-    public static void modify(MethodVisitor mv, VarAddress[] targets, Value value, Operator operator) {
-        for (VarAddress target : targets) {
+    public static void modify(MethodVisitor mv, VarAddress<?>[] targets, Value value, Operator operator) {
+        for (VarAddress<?> target : targets) {
             target.modify(mv, value.negateIf(target.isNegated()), operator);
         }
     }
 
-    public static void lerp(MethodVisitor mv, VarAddress[] targets, Value progress, boolean rotational, Value value) {
+    public static void lerp(MethodVisitor mv, VarAddress<?>[] targets, Value progress, boolean rotational, Value value) {
         if (progress instanceof NumLiteral(double v)) {
             if (v == 0) {
                 return;
@@ -79,7 +79,7 @@ public class JvmUtil {
                 return;
             }
         }
-        for (VarAddress target : targets) {
+        for (VarAddress<?> target : targets) {
             target.lerp(mv, value.negateIf(target.isNegated()), progress, rotational);
         }
     }

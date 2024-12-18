@@ -7,8 +7,12 @@ import com.fiskmods.quantify.jvm.FunctionAddress;
 import com.fiskmods.quantify.jvm.JvmClassComposer;
 import com.fiskmods.quantify.jvm.JvmFunctionDefinition;
 import com.fiskmods.quantify.jvm.VarAddress;
+import com.fiskmods.quantify.jvm.assignable.NumVar;
+import com.fiskmods.quantify.jvm.assignable.VarType;
 import com.fiskmods.quantify.library.QtfLibrary;
 import com.fiskmods.quantify.member.*;
+import com.fiskmods.quantify.parser.element.Assignable;
+import com.fiskmods.quantify.parser.element.Value;
 
 import java.util.*;
 
@@ -70,10 +74,10 @@ public class SyntaxContext implements ScopeProvider {
         addMember(name, MemberType.LIBRARY, library);
     }
 
-    public VarAddress addInputVariable(String name, int index) throws QtfParseException {
+    public VarAddress<NumVar> addInputVariable(String name, int index) throws QtfParseException {
         try {
-            VarAddress var = globalScope.members.<VarAddress> put("in:" + name,
-                    MemberType.VARIABLE, () -> VarAddress.arrayAccess(INPUT_ID, index));
+            VarAddress<NumVar> var = globalScope.members.put("in:" + name,
+                    () -> VarAddress.arrayAccess(INPUT_ID, index));
             inputs.put(name, index);
             return var;
         } catch (QtfException e) {
@@ -81,10 +85,10 @@ public class SyntaxContext implements ScopeProvider {
         }
     }
 
-    public VarAddress addOutputVariable(String name) throws QtfParseException {
+    public VarAddress<NumVar> addOutputVariable(String name) throws QtfParseException {
         try {
-            VarAddress var = globalScope.members.<VarAddress> put(name,
-                    MemberType.VARIABLE, () -> VarAddress.arrayAccess(OUTPUT_ID, outputs.size()));
+            VarAddress<NumVar> var = globalScope.members.put(name,
+                    () -> VarAddress.arrayAccess(OUTPUT_ID, outputs.size()));
             outputs.add(name);
             return var;
         } catch (QtfException e) {
@@ -123,11 +127,13 @@ public class SyntaxContext implements ScopeProvider {
 
     private class DefaultNamespace implements Namespace {
         @Override
-        public VarAddress computeVariable(String name, boolean isDefinition) throws QtfException {
+        public <T extends Value & Assignable> VarAddress<T> computeVariable(
+                VarType<T> type, String name, boolean isDefinition) throws QtfException {
             if (isDefinition) {
-                return addLocalVariable(name);
+                return type.define(name, scope());
             }
-            return getMember(name, MemberType.VARIABLE);
+            return getMember(name, MemberType.VARIABLE)
+                    .cast(name, type);
         }
 
         @Override

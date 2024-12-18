@@ -2,75 +2,98 @@ package com.fiskmods.quantify.parser.element;
 
 import com.fiskmods.quantify.exception.QtfException;
 import com.fiskmods.quantify.exception.QtfParseException;
+import com.fiskmods.quantify.jvm.JvmFunction;
+import com.fiskmods.quantify.jvm.VarAddress;
+import com.fiskmods.quantify.jvm.assignable.Struct;
+import com.fiskmods.quantify.jvm.assignable.VarType;
 import com.fiskmods.quantify.lexer.Keywords;
+import com.fiskmods.quantify.lexer.token.Token;
 import com.fiskmods.quantify.lexer.token.TokenClass;
 import com.fiskmods.quantify.library.QtfLibrary;
 import com.fiskmods.quantify.member.MemberMap;
 import com.fiskmods.quantify.member.MemberType;
 import com.fiskmods.quantify.member.Namespace;
-import com.fiskmods.quantify.member.Struct;
 import com.fiskmods.quantify.parser.QtfParser;
-import com.fiskmods.quantify.parser.SyntaxContext;
 import com.fiskmods.quantify.parser.SyntaxParser;
 
 import java.util.Optional;
+import java.util.function.BiFunction;
 
-class IdentifierParser implements SyntaxParser<Value> {
-    static final IdentifierParser INSTANCE = new IdentifierParser();
+class IdentifierParser {
+    static final SyntaxParser<?> LINE_START = from(IdentifierParser::lineStart);
+    static final SyntaxParser<Value> ANY_VALUE = from(IdentifierParser::anyValue);
 
-    @Override
-    public Value accept(QtfParser parser, SyntaxContext context) throws QtfParseException {
-        String name = parser.next(TokenClass.IDENTIFIER).getString();
-        if (Keywords.THIS.equals(name)) {
-            return accept(parser, context, context.getDefaultNamespace(), nextName(parser), false);
-        }
+    static <T extends JvmFunction> SyntaxParser<T> from(BiFunction<String, Namespace, SyntaxParser<T>> nextParser) {
+        return (parser, context) -> {
+            Token token = parser.next(TokenClass.IDENTIFIER);
+            String name = token.getString();
 
-        Optional<MemberMap.Member<?>> member = context.findMember(name);
-        if (member.isPresent()) {
-            MemberType<?> type = member.get().type();
-
-            if (type == MemberType.OUTPUT) {
-                return parser.next(VariableParser.parseOutput(name, nextName(parser)));
+            if (!parser.isNext(TokenClass.DOT)) {
+                return parser.next(nextParser.apply(name, context.namespace()));
             }
-            if (type == MemberType.LIBRARY) {
-                Namespace namespace = Namespace.of((QtfLibrary) member.get().value());
-                return accept(parser, context, namespace, nextName(parser), false);
+            parser.clearPeekedToken();
+            String child = parser.next(TokenClass.IDENTIFIER).getString();
+            if (Keywords.THIS.equals(name)) {
+                return parser.next(nextParser.apply(child, context.getDefaultNamespace()));
             }
-            if (type == MemberType.STRUCT) {
-                Struct struct = (Struct) member.get().value();
-                name = StructRefParser.expandName(parser, nextName(parser));
-                return accept(parser, context, struct, name, false);
+
+            Optional<MemberMap.Member<?>> member = context.findMember(name);
+            if (member.isPresent()) {
+                MemberType<?> type = member.get().type();
+
+                if (type == MemberType.LIBRARY) {
+                    Namespace namespace = Namespace.of((QtfLibrary) member.get().value());
+                    return parser.next(nextParser.apply(child, namespace));
+                }
+                if (type == MemberType.VARIABLE && ((VarAddress<?>) member.get().value()).is(VarType.STRUCT)) {
+                    Struct struct = (Struct) ((VarAddress<?>) member.get().value()).access();
+                    if (parser.isNext(TokenClass.DOT)) {
+                        child = expandName(parser, struct, child);
+                    }
+                    return parser.next(nextParser.apply(child, struct));
+                }
+
+                throw QtfParseException.error("expected '%s' to be a %s, was %s"
+                        .formatted(name, MemberType.LIBRARY.name(), type.name()), token);
             }
-        }
-        return accept(parser, context, context.namespace(), name, true);
+            throw QtfParseException.error("undefined library '%s'".formatted(name), token);
+        };
     }
 
-    private static Value accept(QtfParser parser, SyntaxContext context, Namespace namespace, String name,
-                                boolean isImplicit) throws QtfParseException {
-        try {
-            if (namespace.hasFunction(name)) {
-                return parser.next(FunctionRef.parser(namespace.getFunction(name), true));
-            }
-            if (namespace.hasConstant(name)) {
-                return new NumLiteral(namespace.getConstant(name));
-            }
-            return namespace.computeVariable(name, false);
-        } catch (QtfParseException e) {
-            throw e;
-        } catch (QtfException e) {
-            // If nothing was found in the library, search locally
-            if (isImplicit && namespace != context.getDefaultNamespace()) {
-                return accept(parser, context, context.getDefaultNamespace(), name, true);
-            }
-            throw new QtfParseException(e);
-        }
+    private static SyntaxParser<?> lineStart(String name, Namespace namespace) {
+        return FunctionRef.tryParse(name, namespace, false)
+                .or(Assignment.parserFrom(name, namespace));
     }
 
-    static String nextName(QtfParser parser) throws QtfParseException {
+    @SuppressWarnings("unchecked")
+    static SyntaxParser<Value> anyValue(String name, Namespace namespace) {
+        return (SyntaxParser<Value>) FunctionRef.tryParse(name, namespace, true)
+                .or((parser, context) -> {
+                    try {
+                        if (namespace.hasConstant(name)) {
+                            return new NumLiteral(namespace.getConstant(name));
+                        }
+                        return namespace.computeVariable(VarType.NUM, name, false);
+                    } catch (QtfException e) {
+                        throw new QtfParseException(e);
+                    }
+                });
+    }
+
+    private static String nextName(QtfParser parser) throws QtfParseException {
         if (parser.isNext(TokenClass.DOT)) {
             parser.clearPeekedToken();
             return parser.next(TokenClass.IDENTIFIER).getString();
         }
         return null;
+    }
+
+    private static String expandName(QtfParser parser, Struct struct, String name) throws QtfParseException {
+        StringBuilder b = new StringBuilder(name);
+        while ((name = nextName(parser)) != null) {
+            struct.expand(b.toString());
+            b.append('.').append(name);
+        }
+        return b.toString();
     }
 }

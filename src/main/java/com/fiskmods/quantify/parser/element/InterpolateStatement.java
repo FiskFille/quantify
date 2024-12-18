@@ -12,7 +12,7 @@ import com.fiskmods.quantify.parser.SyntaxContext;
 import com.fiskmods.quantify.parser.SyntaxParser;
 import org.objectweb.asm.MethodVisitor;
 
-record InterpolateStatement(Value progress, VarAddress substitution, JvmFunction body) implements JvmFunction {
+record InterpolateStatement(Value progress, VarAddress<?> substitution, JvmFunction body) implements JvmFunction {
     static final SyntaxParser<InterpolateStatement> PARSER = new InterpolateStatementParser();
 
     @Override
@@ -30,7 +30,7 @@ record InterpolateStatement(Value progress, VarAddress substitution, JvmFunction
         @Override
         public InterpolateStatement accept(QtfParser parser, SyntaxContext context) throws QtfParseException {
             Value progress;
-            VarAddress substitution;
+            VarAddress<?> substitution;
 
             parser.next(TokenClass.INTERPOLATE);
             parser.next(TokenClass.OPEN_PARENTHESIS);

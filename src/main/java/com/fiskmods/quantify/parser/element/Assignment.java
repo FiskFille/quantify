@@ -1,51 +1,52 @@
 package com.fiskmods.quantify.parser.element;
 
-import com.fiskmods.quantify.exception.QtfParseException;
 import com.fiskmods.quantify.jvm.JvmFunction;
+import com.fiskmods.quantify.jvm.VarAddress;
+import com.fiskmods.quantify.jvm.assignable.VarType;
 import com.fiskmods.quantify.lexer.token.Operator;
 import com.fiskmods.quantify.lexer.token.Token;
 import com.fiskmods.quantify.lexer.token.TokenClass;
+import com.fiskmods.quantify.member.Namespace;
 import com.fiskmods.quantify.parser.QtfParser;
-import com.fiskmods.quantify.parser.SyntaxContext;
 import com.fiskmods.quantify.parser.SyntaxParser;
 import org.objectweb.asm.MethodVisitor;
 
 interface Assignment extends JvmFunction {
-    SyntaxParser<Assignment> PARSER = (parser, context) -> {
-        Assignable target = parser.next(Assignable.parse(false));
-        return parser.next(new AssignmentParser(target, false));
-    };
-
-    record AssignmentParser(Assignable target, boolean isDefinition) implements SyntaxParser<Assignment> {
-        @Override
-        public Assignment accept(QtfParser parser, SyntaxContext context) throws QtfParseException {
+    static SyntaxParser<Assignment> parser(Assignable target, boolean isDefinition) {
+        return (parser, context) -> {
             // Empty definition
             if (!parser.hasNext(QtfParser.Boundary.LINE)) {
-                return new AbsoluteAssignment(target, null, null);
+                return new Assignment.AbsoluteAssignment(target, null, null);
             }
 
             Token assignment = parser.next(TokenClass.ASSIGNMENT);
-            Operator op = null;
-            if (assignment.value() instanceof Operator) {
-                if (isDefinition) {
-                    throw QtfParseException.error("definitions can't use assignment operators", assignment);
-                }
-                op = (Operator) assignment.value();
-
-                if ((op == Operator.LERP || op == Operator.LERP_ROT) &&
-                        context.scope().getLerpProgress() == null) {
-                    throw QtfParseException.error("interpolation assignments can only be used inside" +
-                            " interpolate blocks", assignment);
-                }
-            }
+            Operator op = assignment.getAssignmentOperator(context, isDefinition);
 
             Value value = parser.next(ExpressionParser.INSTANCE);
             if (op == Operator.LERP || op == Operator.LERP_ROT) {
-                return new LerpAssignment(target, value, context.scope().getLerpProgress(),
+                return new Assignment.LerpAssignment(target, value, context.scope().getLerpProgress(),
                         op == Operator.LERP_ROT);
             }
-            return new AbsoluteAssignment(target, value, op);
-        }
+            return new Assignment.AbsoluteAssignment(target, value, op);
+        };
+    }
+
+    static SyntaxParser<Assignment> parserFrom(String name, Namespace namespace) {
+        return (parser, context) -> {
+            VarAddress<?> firstVar = VariableParser.compute(name, namespace, VarType.NUM, false);
+
+            if (parser.isNext(TokenClass.COMMA)) {
+                VariableList<?> list = parser.next(VariableList.parse(firstVar, false));
+                return parser.next(parser(list, false));
+            }
+            return parser.next(parser(firstVar, false));
+        };
+    }
+
+    static SyntaxParser<Assignment> parseDef(String name) {
+        return VariableParser.def(name, VarType.NUM)
+                .map(var -> Assignable.parse(var, true))
+                .map(target -> Assignment.parser(target, true));
     }
 
     record AbsoluteAssignment(Assignable target, Value value, Operator op) implements Assignment {

@@ -18,7 +18,6 @@ class DefParser implements SyntaxParser<JvmFunction> {
         if (parser.isNext(TokenClass.OPEN_PARENTHESIS)) {
             return parser.next(new FunctionDef.FunctionDefParser(name));
         }
-        Assignable target = parser.next(Assignable.parse(name, true));
-        return parser.next(new Assignment.AssignmentParser(target, true));
+        return parser.next(Assignment.parseDef(name));
     }
 }

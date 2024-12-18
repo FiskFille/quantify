@@ -4,8 +4,8 @@ import com.fiskmods.quantify.exception.QtfParseException;
 import com.fiskmods.quantify.jvm.JvmFunction;
 import com.fiskmods.quantify.lexer.Keywords;
 import com.fiskmods.quantify.lexer.token.TokenClass;
-import com.fiskmods.quantify.member.Namespace;
 import com.fiskmods.quantify.member.MemberType;
+import com.fiskmods.quantify.member.Namespace;
 import com.fiskmods.quantify.parser.QtfParser;
 import com.fiskmods.quantify.parser.SyntaxContext;
 import com.fiskmods.quantify.parser.SyntaxParser;
@@ -22,7 +22,8 @@ class NamespaceParser implements SyntaxParser<JvmFunction> {
         if (namespaceName.equals(Keywords.THIS)) {
             namespace = context.getDefaultNamespace();
         } else {
-            namespace = Namespace.of(context.getMember(namespaceName, MemberType.LIBRARY));
+            namespace = Namespace.of(context.getMember(namespaceName, MemberType.LIBRARY))
+                    .fallback(context.getDefaultNamespace());
         }
 
         boolean skipped = parser.skip(TokenClass.TERMINATOR);

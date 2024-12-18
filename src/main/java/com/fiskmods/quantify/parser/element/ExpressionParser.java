@@ -21,11 +21,11 @@ class ExpressionParser implements SyntaxParser<Value> {
         List<Object> stack = new ArrayList<>();
         Deque<Integer> lastPriority = new ArrayDeque<>();
 
-        stack.add(parser.next(this::acceptValue));
+        stack.add(parser.next(ExpressionParser::acceptValue));
 
         while (parser.hasNext(QtfParser.Boundary.CLOSURE)) {
             Operator op = parser.next(TokenClass.OPERATOR).getOperator();
-            Value right = parser.next(this::acceptValue);
+            Value right = parser.next(ExpressionParser::acceptValue);
 
             while (!lastPriority.isEmpty() && lastPriority.peek() <= op.priority()) {
                 reduce(stack);
@@ -42,7 +42,7 @@ class ExpressionParser implements SyntaxParser<Value> {
         return (Value) stack.getFirst();
     }
 
-    private Value acceptValue(QtfParser parser, SyntaxContext context) throws QtfParseException {
+    private static Value acceptValue(QtfParser parser, SyntaxContext context) throws QtfParseException {
         Token peeked = parser.peek();
 
         // Consumes any leading + or - signs
@@ -58,7 +58,7 @@ class ExpressionParser implements SyntaxParser<Value> {
             }
         }
         return switch (peeked.type()) {
-            case IDENTIFIER -> parser.next(IdentifierParser.INSTANCE);
+            case IDENTIFIER -> parser.next(IdentifierParser.ANY_VALUE);
             case OPEN_PARENTHESIS -> {
                 parser.clearPeekedToken();
                 Value val = parser.next(INSTANCE);
@@ -69,7 +69,7 @@ class ExpressionParser implements SyntaxParser<Value> {
         };
     }
 
-    private void reduce(List<Object> stack) {
+    private static void reduce(List<Object> stack) {
         Value right = (Value) stack.removeLast();
         Operator op = (Operator) stack.removeLast();
         Value left = (Value) stack.removeLast();

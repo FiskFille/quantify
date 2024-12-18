@@ -87,7 +87,7 @@ public class TextScanner {
             s = s.substring(i + 1);
             ++line;
         }
-        return String.format("line %s, column %s", line, s.length() + 1);
+        return "line %s, column %s".formatted(line, s.length() + 1);
     }
 
     public static String trace(String text, int scanIndex) {

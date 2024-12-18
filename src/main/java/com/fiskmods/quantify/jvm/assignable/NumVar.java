@@ -1,5 +1,6 @@
-package com.fiskmods.quantify.jvm;
+package com.fiskmods.quantify.jvm.assignable;
 
+import com.fiskmods.quantify.jvm.JvmUtil;
 import com.fiskmods.quantify.lexer.token.Operator;
 import com.fiskmods.quantify.parser.element.Assignable;
 import com.fiskmods.quantify.parser.element.NumLiteral;
@@ -8,10 +9,10 @@ import org.objectweb.asm.MethodVisitor;
 
 import static org.objectweb.asm.Opcodes.*;
 
-public interface JvmVariable extends Value, Assignable {
+public interface NumVar extends Value, Assignable {
     String QTF_MATH = "com/fiskmods/quantify/library/QtfMath";
 
-    record Local(int id) implements JvmVariable {
+    record Local(int id) implements NumVar {
         @Override
         public void apply(MethodVisitor mv) {
             mv.visitVarInsn(DLOAD, id);
@@ -68,7 +69,7 @@ public interface JvmVariable extends Value, Assignable {
         }
     }
 
-    record ArrayAccess(int id, int arrayIndex) implements JvmVariable {
+    record ArrayAccess(int id, int arrayIndex) implements NumVar {
         @Override
         public void apply(MethodVisitor mv) {
             JvmUtil.arrayLoad(mv, id, arrayIndex);

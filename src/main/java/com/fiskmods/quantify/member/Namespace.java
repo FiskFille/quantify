@@ -3,10 +3,14 @@ package com.fiskmods.quantify.member;
 import com.fiskmods.quantify.exception.QtfException;
 import com.fiskmods.quantify.jvm.FunctionAddress;
 import com.fiskmods.quantify.jvm.VarAddress;
+import com.fiskmods.quantify.jvm.assignable.VarType;
+import com.fiskmods.quantify.library.FallbackNamespace;
 import com.fiskmods.quantify.library.QtfLibrary;
+import com.fiskmods.quantify.parser.element.Assignable;
+import com.fiskmods.quantify.parser.element.Value;
 
 public interface Namespace {
-    VarAddress computeVariable(String name, boolean isDefinition) throws QtfException;
+    <T extends Value & Assignable> VarAddress<T> computeVariable(VarType<T> type, String name, boolean isDefinition) throws QtfException;
 
     boolean hasVariable(String name);
 
@@ -18,10 +22,18 @@ public interface Namespace {
 
     boolean hasConstant(String name);
 
+    default Namespace fallback(Namespace fallbackNamespace) {
+        if (fallbackNamespace == this) {
+            return this;
+        }
+        return new FallbackNamespace(this, fallbackNamespace);
+    }
+
     static Namespace of(QtfLibrary library) {
         return new Namespace() {
             @Override
-            public VarAddress computeVariable(String name, boolean isDefinition) throws QtfException {
+            public <T extends Value & Assignable> VarAddress<T> computeVariable(
+                    VarType<T> type, String name, boolean isDefinition) throws QtfException {
                 throw new QtfException("Undefined variable '%s' in library '%s'"
                         .formatted(name, library.getKey()));
             }
