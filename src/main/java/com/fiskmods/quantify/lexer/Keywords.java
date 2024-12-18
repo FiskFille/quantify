@@ -2,8 +2,9 @@ package com.fiskmods.quantify.lexer;
 
 public interface Keywords {
     // Syntax
-    String DEF = "def";
+    String VAR = "var";
     String CONST = "const";
+    String FUNC = "func";
     String STRUCT = "struct";
     String THIS = "this";
     String IMPORT = "import";

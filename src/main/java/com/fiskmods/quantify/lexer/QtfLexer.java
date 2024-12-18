@@ -122,8 +122,9 @@ public class QtfLexer {
                 if ((result = scanner.next(ScannerPattern.IDENTIFIER)) != null) {
                     switch (result) {
                         // Syntax keywords
-                        case Keywords.DEF -> tokens.accept(scanner.newToken(DEF));
+                        case Keywords.VAR -> tokens.accept(scanner.newToken(VAR));
                         case Keywords.CONST -> tokens.accept(scanner.newToken(CONST));
+                        case Keywords.FUNC -> tokens.accept(scanner.newToken(FUNC));
                         case Keywords.STRUCT -> tokens.accept(scanner.newToken(STRUCT));
                         case Keywords.IMPORT -> tokens.accept(scanner.newToken(IMPORT));
                         case Keywords.INPUT -> tokens.accept(scanner.newToken(INPUT));

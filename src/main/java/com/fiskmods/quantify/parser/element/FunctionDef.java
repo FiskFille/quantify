@@ -21,6 +21,8 @@ import static org.objectweb.asm.Opcodes.*;
 
 record FunctionDef(DefinedFunctionAddress address, JvmFunction body, ReturnValueType returnValue)
         implements JvmFunctionDefinition {
+    static final SyntaxParser<JvmFunction> PARSER = new FunctionDefParser();
+
     @Override
     public JvmClassComposer define(String className) {
         address.owner = className;
@@ -39,10 +41,13 @@ record FunctionDef(DefinedFunctionAddress address, JvmFunction body, ReturnValue
         };
     }
 
-    record FunctionDefParser(String name) implements SyntaxParser<JvmFunction> {
+    private static class FunctionDefParser implements SyntaxParser<JvmFunction> {
         @Override
         public JvmFunction accept(QtfParser parser, SyntaxContext context) throws QtfParseException {
             DefinedFunctionAddress address = new DefinedFunctionAddress();
+
+            parser.clearPeekedToken();
+            String name = parser.next(TokenClass.IDENTIFIER).getString();
             context.addMember(name, MemberType.FUNCTION, address);
 
             parser.next(TokenClass.OPEN_PARENTHESIS);

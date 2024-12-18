@@ -14,8 +14,9 @@ public class SyntaxSelector {
             case IF -> IfStatement.PARSER;
             case INTERPOLATE -> InterpolateStatement.PARSER;
             case NAMESPACE -> NamespaceParser.INSTANCE;
-            case DEF -> DefParser.INSTANCE;
+            case VAR -> VariableParser.INSTANCE;
             case CONST -> ConstDefParser.INSTANCE;
+            case FUNC -> FunctionDef.PARSER;
             case STRUCT -> StructDefParser.INSTANCE;
             case RETURN -> Return.INSTANCE;
 

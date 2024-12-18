@@ -11,8 +11,9 @@ public enum TokenClass {
     STR_LITERAL,
 
     // Syntax keywords
-    DEF,
+    VAR,
     CONST,
+    FUNC,
     STRUCT,
     IMPORT,
     INPUT,
