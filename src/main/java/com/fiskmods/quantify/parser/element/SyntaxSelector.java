@@ -10,7 +10,7 @@ public class SyntaxSelector {
         return switch (next.type()) {
             case IMPORT -> checkScope(ImportParser.INSTANCE, context, next);
             case INPUT -> checkScope(InputParser.INSTANCE, context, next);
-            case OUTPUT -> checkScope(OutputParser.INSTANCE, context, next);
+            case PUBLIC -> checkScope(PublicParser.INSTANCE, context, next);
             case IF -> IfStatement.PARSER;
             case INTERPOLATE -> InterpolateStatement.PARSER;
             case NAMESPACE -> NamespaceParser.INSTANCE;

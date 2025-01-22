@@ -16,8 +16,12 @@ public interface SyntaxParser<T extends JvmFunction> {
         };
     }
 
-    default <R extends JvmFunction> SyntaxParser<R> map(Function<T, SyntaxParser<R>> func) {
+    default <R extends JvmFunction> SyntaxParser<R> sequence(Function<T, SyntaxParser<R>> func) {
         return (parser, context) -> func.apply(accept(parser, context))
                 .accept(parser, context);
+    }
+
+    default <R extends JvmFunction> SyntaxParser<R> map(Function<T, R> func) {
+        return (parser, context) -> func.apply(accept(parser, context));
     }
 }

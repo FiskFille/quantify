@@ -45,8 +45,8 @@ interface Assignment extends JvmFunction {
 
     static SyntaxParser<Assignment> parseDef(String name) {
         return VariableParser.def(name, VarType.NUM)
-                .map(var -> Assignable.parse(var, true))
-                .map(target -> Assignment.parser(target, true));
+                .sequence(var -> Assignable.parse(var, true))
+                .sequence(target -> Assignment.parser(target, true));
     }
 
     record AbsoluteAssignment(Assignable target, Value value, Operator op) implements Assignment {

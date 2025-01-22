@@ -128,7 +128,7 @@ public class QtfLexer {
                         case Keywords.STRUCT -> tokens.accept(scanner.newToken(STRUCT));
                         case Keywords.IMPORT -> tokens.accept(scanner.newToken(IMPORT));
                         case Keywords.INPUT -> tokens.accept(scanner.newToken(INPUT));
-                        case Keywords.OUTPUT -> tokens.accept(scanner.newToken(OUTPUT));
+                        case Keywords.PUBLIC -> tokens.accept(scanner.newToken(PUBLIC));
 
                         // Control keywords
                         case Keywords.IF -> tokens.accept(scanner.newToken(IF));

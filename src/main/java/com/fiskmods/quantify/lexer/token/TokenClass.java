@@ -17,7 +17,7 @@ public enum TokenClass {
     STRUCT,
     IMPORT,
     INPUT,
-    OUTPUT,
+    PUBLIC,
 
     // Control keywords
     IF,

@@ -9,7 +9,7 @@ public interface Keywords {
     String THIS = "this";
     String IMPORT = "import";
     String INPUT = "input";
-    String OUTPUT = "output";
+    String PUBLIC = "public";
 
     // Control
     String IF = "if";

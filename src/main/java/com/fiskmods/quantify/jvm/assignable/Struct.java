@@ -13,7 +13,9 @@ import com.fiskmods.quantify.parser.element.Assignable;
 import com.fiskmods.quantify.parser.element.Value;
 import org.objectweb.asm.MethodVisitor;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.objectweb.asm.Opcodes.*;
 
@@ -58,26 +60,31 @@ public abstract class Struct implements Namespace, Value, Assignable {
     }
 
     public static Struct create(int index) {
-        return new Root(index);
+        return new RootStruct(index, new AtomicInteger());
+    }
+
+    public static Struct create(String name, int index, AtomicInteger localIndex, List<String> outputs) {
+        return new PublicStruct(name, index, localIndex, outputs);
     }
 
     public static VarAddress<Struct> createVar(int index) {
-        return new VarAddress.Impl<>(VarType.STRUCT, create(index), false);
+        return VarAddress.create(VarType.STRUCT, create(index), false);
     }
 
-    private static class Root extends Struct {
+    private static class RootStruct extends Struct {
         private final MemberMap members = new MemberMap();
         private final int index;
 
-        private int localIndexOffset;
+        private final AtomicInteger localIndex;
 
-        public Root(int index) {
+        public RootStruct(int index, AtomicInteger localIndex) {
             this.index = index;
+            this.localIndex = localIndex;
         }
 
         @Override
         public void init(MethodVisitor mv) {
-            JvmUtil.iconst(mv, localIndexOffset);
+            JvmUtil.iconst(mv, localIndex.get());
             mv.visitIntInsn(NEWARRAY, T_DOUBLE);
             mv.visitVarInsn(ASTORE, index);
         }
@@ -107,15 +114,19 @@ public abstract class Struct implements Namespace, Value, Assignable {
                         .cast(name, type);
             }
 
+            VarAddress<T> var;
             if (type == VarType.STRUCT) {
-                return (VarAddress<T>) members.put(name,
-                        () -> new VarAddress.Impl<>(VarType.STRUCT, new Child(), false));
+                var = (VarAddress<T>) members.put(name,
+                        () -> VarAddress.create(VarType.STRUCT, new Child(), false));
+            } else {
+                var = (VarAddress<T>) members.put(name,
+                        () -> VarAddress.arrayAccess(index, localIndex.getAndIncrement()));
             }
-            return (VarAddress<T>) members.put(name, () -> {
-                VarAddress<NumVar> var = VarAddress.arrayAccess(index, localIndexOffset);
-                ++localIndexOffset;
-                return var;
-            });
+            onVariableAdded(name, var);
+            return var;
+        }
+
+        public <T extends Value & Assignable> void onVariableAdded(String name, VarAddress<T> var) {
         }
 
         @Override
@@ -138,6 +149,24 @@ public abstract class Struct implements Namespace, Value, Assignable {
             @Override
             public boolean hasVariable(String name) {
                 return false;
+            }
+        }
+    }
+
+    private static class PublicStruct extends RootStruct {
+        private final String rootName;
+        private final List<String> outputs;
+
+        public PublicStruct(String name, int index, AtomicInteger localIndex, List<String> outputs) {
+            super(index, localIndex);
+            this.rootName = name;
+            this.outputs = outputs;
+        }
+
+        @Override
+        public <T extends Value & Assignable> void onVariableAdded(String name, VarAddress<T> var) {
+            if (var.type() == VarType.NUM) {
+                outputs.add(rootName + '.' + name);
             }
         }
     }

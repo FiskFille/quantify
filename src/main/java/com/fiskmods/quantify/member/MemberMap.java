@@ -8,6 +8,7 @@ import com.fiskmods.quantify.parser.element.Value;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 public class MemberMap {
@@ -24,6 +25,10 @@ public class MemberMap {
             }
             members.put(e.getKey(), e.getValue());
         }
+    }
+
+    public void forEach(BiConsumer<String, Member<?>> action) {
+        members.forEach(action);
     }
 
     public Optional<Member<?>> find(String name) {

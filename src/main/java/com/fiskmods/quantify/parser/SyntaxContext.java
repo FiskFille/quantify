@@ -8,6 +8,7 @@ import com.fiskmods.quantify.jvm.JvmClassComposer;
 import com.fiskmods.quantify.jvm.JvmFunctionDefinition;
 import com.fiskmods.quantify.jvm.VarAddress;
 import com.fiskmods.quantify.jvm.assignable.NumVar;
+import com.fiskmods.quantify.jvm.assignable.Struct;
 import com.fiskmods.quantify.jvm.assignable.VarType;
 import com.fiskmods.quantify.library.QtfLibrary;
 import com.fiskmods.quantify.member.*;
@@ -15,6 +16,7 @@ import com.fiskmods.quantify.parser.element.Assignable;
 import com.fiskmods.quantify.parser.element.Value;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class SyntaxContext implements ScopeProvider {
     private static final int INPUT_ID = 1;
@@ -26,8 +28,10 @@ public class SyntaxContext implements ScopeProvider {
     private final LinkedList<Scope> currentScope = new LinkedList<>();
 
     private final Map<String, Integer> inputs = new HashMap<>();
-    private final List<String> outputs = new ArrayList<>();
     private final List<JvmFunctionDefinition> functionDefinitions = new ArrayList<>();
+
+    private final List<String> outputs = new ArrayList<>();
+    private final AtomicInteger outputIndex = new AtomicInteger();
 
     private final QtfCompiler compiler;
 
@@ -96,8 +100,28 @@ public class SyntaxContext implements ScopeProvider {
         }
     }
 
-    public int defineFunction(JvmFunctionDefinition composer) {
-        functionDefinitions.add(composer);
+    public VarAddress<NumVar> addPublicVar(String name) throws QtfParseException {
+        try {
+            VarAddress<NumVar> var = globalScope.members.put(name,
+                    () -> VarAddress.arrayAccess(OUTPUT_ID, outputIndex.getAndIncrement()));
+            outputs.add(name);
+            return var;
+        } catch (QtfException e) {
+            throw new QtfParseException(e);
+        }
+    }
+
+    public VarAddress<Struct> addPublicStruct(String name) throws QtfParseException {
+        try {
+            return scope().members.put(name, () -> VarAddress.create(VarType.STRUCT,
+                    Struct.create(name, OUTPUT_ID, outputIndex, outputs), false));
+        } catch (QtfException e) {
+            throw new QtfParseException(e);
+        }
+    }
+
+    public int defineFunction(JvmFunctionDefinition definition) {
+        functionDefinitions.add(definition);
         return functionDefinitions.size() - 1;
     }
 
